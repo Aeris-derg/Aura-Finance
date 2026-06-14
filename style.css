@@ -80,14 +80,52 @@ body.dark-theme {
 }
 
 .modal-content {
-    padding: 40px;
-    max-width: 400px;
+    padding: 30px 40px;
+    max-width: 420px;
     width: 100%;
     text-align: center;
 }
 
-.modal-content h2 { margin-bottom: 10px; color: var(--text-primary); }
+.modal-content h2 { margin-bottom: 15px; color: var(--text-primary); }
 .modal-content p { color: var(--text-secondary); margin-bottom: 24px; }
+
+/* Setup Modal Tabs */
+.setup-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    padding-bottom: 8px;
+}
+body.dark-theme .setup-tabs {
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 12px;
+    transition: var(--transition);
+    font-family: inherit;
+    font-size: 1.05rem;
+    position: relative;
+}
+.tab-btn.active {
+    color: var(--text-primary);
+}
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -9px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--accent-color);
+    border-radius: 2px 2px 0 0;
+}
 
 /* Typography */
 h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }

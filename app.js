@@ -556,7 +556,49 @@ document.getElementById('theme-color-picker').addEventListener('change', (e) => 
     syncState();
 });
 
-// Setup Form Submission
+// Tab Switching
+document.getElementById('tab-login').addEventListener('click', () => {
+    document.getElementById('tab-login').classList.add('active');
+    document.getElementById('tab-create').classList.remove('active');
+    document.getElementById('login-form').classList.remove('hidden');
+    document.getElementById('setup-form').classList.add('hidden');
+    sounds.click();
+});
+
+document.getElementById('tab-create').addEventListener('click', () => {
+    document.getElementById('tab-create').classList.add('active');
+    document.getElementById('tab-login').classList.remove('active');
+    document.getElementById('setup-form').classList.remove('hidden');
+    document.getElementById('login-form').classList.add('hidden');
+    sounds.click();
+});
+
+// Join Group / Login Submission
+document.getElementById('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const gId = document.getElementById('login-group-id').value.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
+    if (!gId) {
+        alert("Please enter a valid Group ID.");
+        return;
+    }
+
+    db.ref('groups/' + gId).once('value')
+        .then((snapshot) => {
+            const val = snapshot.val();
+            if (val && val.budget > 0) {
+                sounds.success();
+                joinGroup(gId);
+            } else {
+                alert(`Group "${gId}" was not found or is empty. Please check the ID or create a new group under the "New Group" tab.`);
+            }
+        })
+        .catch((error) => {
+            console.error("Login once() check failed:", error);
+            alert("Database Connection Failed: " + error.message);
+        });
+});
+
+// Setup Form Submission (New Group)
 document.getElementById('setup-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const gId = document.getElementById('group-id').value.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');

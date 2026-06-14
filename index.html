@@ -13,11 +13,26 @@
     <div id="setup-modal" class="modal hidden">
         <div class="modal-content glass">
             <h2>Welcome to Aura Finance</h2>
-            <p>Let's set up your monthly plan. If you have an existing group, enter its ID to restore your data.</p>
-            <form id="setup-form">
+            
+            <div class="setup-tabs">
+                <button id="tab-login" class="tab-btn active">Join Group</button>
+                <button id="tab-create" class="tab-btn">New Group</button>
+            </div>
+
+            <!-- Login / Restore Form -->
+            <form id="login-form">
                 <div class="form-group">
-                    <label for="group-id">Group ID (e.g. smith-family)</label>
-                    <input type="text" id="group-id" required placeholder="Enter custom group ID">
+                    <label for="login-group-id">Group ID</label>
+                    <input type="text" id="login-group-id" required placeholder="e.g. smith-family">
+                </div>
+                <button type="submit" class="btn primary full-width">Sync & Log In</button>
+            </form>
+
+            <!-- Create Form -->
+            <form id="setup-form" class="hidden">
+                <div class="form-group">
+                    <label for="group-id">Group ID</label>
+                    <input type="text" id="group-id" required placeholder="e.g. smith-family">
                 </div>
                 <div class="form-group">
                     <label for="monthly-budget">Monthly Budget (£)</label>
@@ -31,7 +46,7 @@
                     <label for="custom-month-length">Days in Month (Leave 0 for automatic)</label>
                     <input type="number" id="custom-month-length" value="0" min="0" max="60">
                 </div>
-                <button type="submit" class="btn primary full-width">Start Planning</button>
+                <button type="submit" class="btn primary full-width">Create Group</button>
             </form>
         </div>
     </div>
