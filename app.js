@@ -29,9 +29,21 @@ const sounds = {
 };
 
 // ===============================
-// STATE MANAGEMENT & WEBSOCKETS
+// FIREBASE CONFIGURATION & SYNC
 // ===============================
-const socket = io();
+const firebaseConfig = {
+  apiKey: "AIzaSyDGyj5wQm1FJGIMbceeeYykd0U1Ys5IC74",
+  authDomain: "aura-finance-6b6b3.firebaseapp.com",
+  projectId: "aura-finance-6b6b3",
+  storageBucket: "aura-finance-6b6b3.firebasestorage.app",
+  messagingSenderId: "535623897451",
+  appId: "1:535623897451:web:23f202435008018519fc2e",
+  databaseURL: "https://aura-finance-6b6b3-default-rtdb.europe-west1.firebasedatabase.app/"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 let state = {
     budget: 0,
@@ -47,27 +59,69 @@ let state = {
 
 // Internal transient state
 let viewingDate = new Date();
-let calendarViewingDate = new Date(); // Separate month for calendar viewing
+let calendarViewingDate = new Date();
 let pieChartInstance = null;
-
-socket.on('stateUpdate', (newState) => {
-    state = { ...state, ...newState };
-    applyTheme(state.themeColor);
-    applyDarkMode(state.isDarkMode);
-    updateUI();
-});
+let currentGroupId = localStorage.getItem('aura_group_id') || null;
+let dbRef = null;
 
 function syncState() {
-    socket.emit('pushState', state);
-    applyTheme(state.themeColor);
-    applyDarkMode(state.isDarkMode);
-    updateUI();
+    if (dbRef) {
+        dbRef.set(state);
+    }
+}
+
+function joinGroup(groupId, isNewCreation = false, initialSetupData = null) {
+    currentGroupId = groupId.trim().toLowerCase().replace(/[^a-z0-9-_]/g, ''); // sanitize ID
+    if (!currentGroupId) return;
+
+    localStorage.setItem('aura_group_id', currentGroupId);
+    document.getElementById('header-group-id').textContent = currentGroupId;
+
+    if (dbRef) {
+        dbRef.off(); // Detach previous listeners
+    }
+
+    dbRef = db.ref('groups/' + currentGroupId);
+
+    // If it's a new creation, set the initial data first
+    if (isNewCreation && initialSetupData) {
+        state = { ...state, ...initialSetupData };
+        dbRef.set(state);
+    }
+
+    // Attach real-time listener
+    dbRef.on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+            // Merge defaults in case new fields were added
+            state = { ...state, ...val };
+            applyTheme(state.themeColor);
+            applyDarkMode(state.isDarkMode);
+            updateUI();
+        } else {
+            // Group exists on client but not on DB (e.g. wiped or initialized without data)
+            if (!isNewCreation) {
+                // Prompt setup again
+                localStorage.removeItem('aura_group_id');
+                currentGroupId = null;
+                dbRef = null;
+                updateUI();
+            }
+        }
+    });
+}
+
+// Check initial load state
+if (currentGroupId) {
+    joinGroup(currentGroupId);
+} else {
+    updateUI(); // This will show setup modal
 }
 
 function applyTheme(color) {
     document.documentElement.style.setProperty('--theme-color', color);
     document.getElementById('theme-color-picker').value = color;
-    updateChart(); // Update chart colors
+    updateChart();
 }
 
 function applyDarkMode(isDark) {
@@ -78,7 +132,7 @@ function applyDarkMode(isDark) {
         document.body.classList.remove('dark-theme');
         document.getElementById('dark-mode-toggle').innerHTML = '<i class="ri-moon-line"></i>';
     }
-    updateChart(); // Update chart colors
+    updateChart();
 }
 
 // ===============================
@@ -198,7 +252,6 @@ function updateChart() {
     const ctx = document.getElementById('category-chart');
     if (!ctx) return;
 
-    // Aggregate category spending for current pay period
     const periodPurchases = getPurchasesForPeriod(viewingDate);
     const categoryTotals = {};
     periodPurchases.forEach(p => {
@@ -209,7 +262,6 @@ function updateChart() {
     const labels = Object.keys(categoryTotals);
     const data = Object.values(categoryTotals);
     
-    // Generate colors based on theme color
     const baseColor = state.themeColor || '#b5eadd';
     const bgColors = labels.map((_, i) => hexToRgbA(baseColor, Math.max(0.3, 1 - (i * 0.15))));
     const borderColors = labels.map(() => state.isDarkMode ? '#0f172a' : '#ffffff');
@@ -258,7 +310,6 @@ function updateCalendar() {
     
     monthDisplay.textContent = calendarViewingDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
-    // Clear existing cells (keep headers)
     const headers = grid.querySelectorAll('.cal-day-header');
     grid.innerHTML = '';
     headers.forEach(h => grid.appendChild(h));
@@ -268,25 +319,21 @@ function updateCalendar() {
     const startingDayOfWeek = firstDay.getDay();
     const daysInMonth = lastDay.getDate();
 
-    // Empty cells before start of month
     for (let i = 0; i < startingDayOfWeek; i++) {
         const emptyCell = document.createElement('div');
         emptyCell.className = 'cal-cell empty';
         grid.appendChild(emptyCell);
     }
 
-    // Days of month
     for (let day = 1; day <= daysInMonth; day++) {
         const cellDate = new Date(year, month, day);
         const cell = document.createElement('div');
         cell.className = 'cal-cell';
         
-        // Check if it's the currently viewing date
         if (cellDate.toDateString() === viewingDate.toDateString()) {
             cell.classList.add('selected');
         }
 
-        // Calculate spending for this day
         const dayPurchases = state.purchases.filter(p => new Date(p.date).toDateString() === cellDate.toDateString());
         const dayTotal = dayPurchases.reduce((sum, p) => sum + parseFloat(p.amount), 0);
 
@@ -311,8 +358,12 @@ function updateCalendar() {
 // UI UPDATES
 // ===============================
 
+function formatMoney(amount) {
+    return '£' + parseFloat(amount).toFixed(2);
+}
+
 function updateUI() {
-    if (!state.budget || state.budget <= 0) {
+    if (!currentGroupId) {
         document.getElementById('setup-modal').classList.remove('hidden');
         document.getElementById('app-container').classList.add('hidden');
         return;
@@ -453,7 +504,6 @@ document.getElementById('dark-mode-toggle').addEventListener('click', () => {
 // Date Navigation
 document.getElementById('prev-day').addEventListener('click', () => {
     viewingDate.setDate(viewingDate.getDate() - 1);
-    // sync calendar view if needed
     if(viewingDate.getMonth() !== calendarViewingDate.getMonth()) {
         calendarViewingDate = new Date(viewingDate);
     }
@@ -482,7 +532,6 @@ document.getElementById('cal-next-month').addEventListener('click', () => {
     updateUI();
 });
 
-
 // Theme Picker
 document.getElementById('theme-color-picker').addEventListener('input', (e) => {
     applyTheme(e.target.value);
@@ -492,25 +541,61 @@ document.getElementById('theme-color-picker').addEventListener('change', (e) => 
     syncState();
 });
 
+// Setup Form Submission
 document.getElementById('setup-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    state.budget = parseFloat(document.getElementById('monthly-budget').value);
-    state.payday = parseInt(document.getElementById('payday').value);
-    state.customMonthLength = parseInt(document.getElementById('custom-month-length').value) || 0;
-    sounds.success();
-    syncState();
+    const gId = document.getElementById('group-id').value.trim();
+    const budget = parseFloat(document.getElementById('monthly-budget').value);
+    const payday = parseInt(document.getElementById('payday').value);
+    const customMonthLength = parseInt(document.getElementById('custom-month-length').value) || 0;
+
+    // Check if group already exists in Firebase
+    db.ref('groups/' + gId).once('value', (snapshot) => {
+        const existingData = snapshot.val();
+        if (existingData && existingData.budget > 0) {
+            const acceptExisting = confirm(`The group "${gId}" already exists! Do you want to join it and download its current settings? If you click Cancel, you will overwrite the group with your new settings.`);
+            if (acceptExisting) {
+                // Join existing
+                sounds.success();
+                joinGroup(gId);
+                return;
+            }
+        }
+
+        // Create new or overwrite existing
+        sounds.success();
+        const initialData = {
+            budget,
+            payday,
+            customMonthLength,
+            customCategories: [],
+            purchases: [],
+            quickAdds: [],
+            groceries: [],
+            themeColor: '#b5eadd',
+            isDarkMode: false
+        };
+        joinGroup(gId, true, initialData);
+    });
 });
 
+// Reset app / Leave Group
 document.getElementById('reset-app').addEventListener('click', () => {
-    if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+    if (confirm('Do you want to sign out and leave this group? (Your group\'s data on Firebase will NOT be deleted).')) {
         sounds.delete();
+        localStorage.removeItem('aura_group_id');
+        currentGroupId = null;
+        if (dbRef) {
+            dbRef.off();
+            dbRef = null;
+        }
         state = {
             budget: 0, payday: 1, customMonthLength: 0, customCategories: [], purchases: [],
             quickAdds: [], groceries: [], themeColor: '#b5eadd', isDarkMode: false
         };
         viewingDate = new Date();
         calendarViewingDate = new Date();
-        syncState();
+        updateUI();
     }
 });
 
