@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Finance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="setup-modal" class="modal hidden">
+        <div class="modal-content glass">
+            <h2>Welcome to Aura Finance</h2>
+            <p>Let's set up your monthly plan.</p>
+            <form id="setup-form">
+                <div class="form-group">
+                    <label for="monthly-budget">Monthly Budget (£)</label>
+                    <input type="number" id="monthly-budget" required min="1" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="payday">Payday (Day of the month)</label>
+                    <input type="number" id="payday" required min="1" max="31">
+                </div>
+                <div class="form-group">
+                    <label for="custom-month-length">Days in Month (Leave 0 for automatic)</label>
+                    <input type="number" id="custom-month-length" value="0" min="0" max="60">
+                </div>
+                <button type="submit" class="btn primary full-width">Start Planning</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-container hidden" id="app-container">
+        <header class="glass">
+            <div class="header-left">
+                <div>
+                    <h1>Aura</h1>
+                    <p class="subtitle">Multiplayer Financial Planner</p>
+                </div>
+                <div class="theme-picker" title="Change Theme Color">
+                    <input type="color" id="theme-color-picker" value="#b5eadd">
+                </div>
+                <button id="dark-mode-toggle" class="btn icon-btn" title="Toggle Dark Mode">
+                    <i class="ri-moon-line"></i>
+                </button>
+            </div>
+            
+            <div class="header-center">
+                <button id="prev-day" class="btn icon-btn nav-btn"><i class="ri-arrow-left-s-line"></i></button>
+                <div class="date-display" id="current-date-display">Today</div>
+                <button id="next-day" class="btn icon-btn nav-btn"><i class="ri-arrow-right-s-line"></i></button>
+            </div>
+
+            <div class="header-right">
+                <button id="reset-app" class="btn icon-btn" title="Reset Data"><i class="ri-refresh-line"></i></button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Dashboard Section -->
+            <section class="dashboard">
+                <div class="card glass hero-card">
+                    <h3 id="quota-title">Today's Quota</h3>
+                    <div class="amount" id="daily-quota">£0.00</div>
+                    <div class="carryover">Base: <span id="base-amount">£0.00</span> | Carryover: <span id="carryover-amount">£0.00</span></div>
+                </div>
+                
+                <div class="card glass secondary-card">
+                    <h3>Remaining Budget</h3>
+                    <div class="amount small" id="remaining-budget">£0.00</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="budget-progress"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Visualizations Section -->
+            <div class="visualizations-grid">
+                <section class="card glass">
+                    <h3><i class="ri-pie-chart-2-line"></i> Category Spending</h3>
+                    <div style="position: relative; height:250px; width:100%; display: flex; justify-content: center;">
+                        <canvas id="category-chart"></canvas>
+                    </div>
+                </section>
+                <section class="card glass calendar-section">
+                    <h3><i class="ri-calendar-line"></i> Daily Spending Calendar</h3>
+                    <div class="calendar-header">
+                        <button id="cal-prev-month" class="btn icon-btn nav-btn"><i class="ri-arrow-left-s-line"></i></button>
+                        <span id="cal-month-display">June 2026</span>
+                        <button id="cal-next-month" class="btn icon-btn nav-btn"><i class="ri-arrow-right-s-line"></i></button>
+                    </div>
+                    <div id="calendar-grid" class="calendar-grid">
+                        <div class="cal-day-header">Sun</div>
+                        <div class="cal-day-header">Mon</div>
+                        <div class="cal-day-header">Tue</div>
+                        <div class="cal-day-header">Wed</div>
+                        <div class="cal-day-header">Thu</div>
+                        <div class="cal-day-header">Fri</div>
+                        <div class="cal-day-header">Sat</div>
+                        <!-- Cells generated by JS -->
+                    </div>
+                </section>
+            </div>
+
+            <div class="grid-layout">
+                <!-- Log Purchase Section -->
+                <section class="card glass">
+                    <h3><i class="ri-shopping-cart-2-line"></i> Log Purchase</h3>
+                    <form id="purchase-form">
+                        <div class="form-group">
+                            <label for="purchase-amount">Amount (£)</label>
+                            <input type="number" id="purchase-amount" required min="0.01" step="0.01" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="purchase-category">Category</label>
+                            <select id="purchase-category">
+                                <option value="Groceries">Groceries</option>
+                                <option value="Transport">Transport</option>
+                                <option value="Entertainment">Entertainment</option>
+                                <option value="Bills">Bills</option>
+                                <option value="Other">Other</option>
+                                <option value="custom">-- Add Custom Category --</option>
+                            </select>
+                        </div>
+                        <div class="form-group hidden" id="custom-category-group">
+                            <label for="custom-category-input">Custom Category Name</label>
+                            <input type="text" id="custom-category-input" placeholder="e.g. Pets">
+                        </div>
+                        <div class="form-group">
+                            <label for="purchase-comment">Comment</label>
+                            <input type="text" id="purchase-comment" placeholder="Optional notes...">
+                        </div>
+                        <button type="submit" class="btn primary full-width">Add Expense</button>
+                    </form>
+
+                    <div class="recent-purchases">
+                        <h4 id="purchases-title">Recent Purchases</h4>
+                        <ul id="purchase-list" class="item-list"></ul>
+                    </div>
+                </section>
+
+                <!-- Quick Adds Section -->
+                <section class="card glass">
+                    <h3><i class="ri-flashlight-line"></i> Quick Add</h3>
+                    <p class="section-desc">Create buttons for frequent purchases. Clicking them instantly deducts from your daily quota.</p>
+                    <form id="quick-add-form" class="inline-form">
+                        <input type="text" id="qa-name" required placeholder="Name (e.g. Coffee)" style="min-width: 0; flex: 2;">
+                        <input type="number" id="qa-amount" required min="0.01" step="0.01" placeholder="Amount" style="min-width: 0; flex: 1;">
+                        <button type="submit" class="btn icon-btn"><i class="ri-add-line"></i></button>
+                    </form>
+                    <div id="quick-add-buttons" class="quick-add-grid"></div>
+                </section>
+
+                <!-- Groceries List Section -->
+                <section class="card glass">
+                    <h3><i class="ri-shopping-basket-line"></i> Needed Groceries</h3>
+                    <form id="grocery-form" class="inline-form">
+                        <input type="number" id="grocery-qty" value="1" min="1" style="min-width: 0; width: 50px; flex: none;" title="Quantity">
+                        <select id="grocery-unit" style="min-width: 0; width: 70px; flex: none; padding: 12px 5px;" title="Unit">
+                            <option value="">-</option>
+                            <option value="kg">kg</option>
+                            <option value="g">g</option>
+                            <option value="lbs">lbs</option>
+                            <option value="L">L</option>
+                            <option value="ml">ml</option>
+                            <option value="pcs">pcs</option>
+                            <option value="boxes">boxes</option>
+                        </select>
+                        <input type="text" id="grocery-name" required placeholder="Item name" style="min-width: 0; flex: 1;">
+                        <button type="submit" class="btn icon-btn"><i class="ri-add-line"></i></button>
+                    </form>
+                    <ul id="grocery-list" class="item-list checkable-list"></ul>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
