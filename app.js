@@ -45,6 +45,15 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// Track connection status
+db.ref('.info/connected').on('value', (snap) => {
+    if (snap.val() === true) {
+        console.log("Connected to Firebase RTDB");
+    } else {
+        console.log("Disconnected from Firebase RTDB (or attempting to connect...)");
+    }
+});
+
 let state = {
     budget: 0,
     payday: 1,
@@ -86,10 +95,13 @@ function joinGroup(groupId, isNewCreation = false, initialSetupData = null) {
     // If it's a new creation, set the initial data first
     if (isNewCreation && initialSetupData) {
         state = { ...state, ...initialSetupData };
-        dbRef.set(state);
+        dbRef.set(state).catch(err => {
+            console.error("Firebase write error:", err);
+            alert("Failed to initialize group settings in database: " + err.message + "\n\nPlease check your Firebase Realtime Database Rules.");
+        });
     }
 
-    // Attach real-time listener
+    // Attach real-time listener with error callback
     dbRef.on('value', (snapshot) => {
         const val = snapshot.val();
         if (val) {
@@ -108,6 +120,9 @@ function joinGroup(groupId, isNewCreation = false, initialSetupData = null) {
                 updateUI();
             }
         }
+    }, (error) => {
+        console.error("Firebase sync error:", error);
+        alert("Permission denied or database connection failed.\n\nPlease ensure your Firebase Realtime Database rules allow Read/Write access.");
     });
 }
 
@@ -544,39 +559,48 @@ document.getElementById('theme-color-picker').addEventListener('change', (e) => 
 // Setup Form Submission
 document.getElementById('setup-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const gId = document.getElementById('group-id').value.trim();
+    const gId = document.getElementById('group-id').value.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
+    if (!gId) {
+        alert("Please enter a valid Group ID (letters, numbers, dashes, and underscores only).");
+        return;
+    }
     const budget = parseFloat(document.getElementById('monthly-budget').value);
     const payday = parseInt(document.getElementById('payday').value);
     const customMonthLength = parseInt(document.getElementById('custom-month-length').value) || 0;
 
-    // Check if group already exists in Firebase
-    db.ref('groups/' + gId).once('value', (snapshot) => {
-        const existingData = snapshot.val();
-        if (existingData && existingData.budget > 0) {
-            const acceptExisting = confirm(`The group "${gId}" already exists! Do you want to join it and download its current settings? If you click Cancel, you will overwrite the group with your new settings.`);
-            if (acceptExisting) {
-                // Join existing
-                sounds.success();
-                joinGroup(gId);
-                return;
+    // Check if group already exists in Firebase using promise-based once() to capture errors
+    db.ref('groups/' + gId).once('value')
+        .then((snapshot) => {
+            const existingData = snapshot.val();
+            if (existingData && existingData.budget > 0) {
+                const acceptExisting = confirm(`The group "${gId}" already exists! Do you want to join it and download its current settings? If you click Cancel, you will overwrite the group with your new settings.`);
+                if (acceptExisting) {
+                    // Join existing
+                    sounds.success();
+                    joinGroup(gId);
+                    return;
+                }
             }
-        }
 
-        // Create new or overwrite existing
-        sounds.success();
-        const initialData = {
-            budget,
-            payday,
-            customMonthLength,
-            customCategories: [],
-            purchases: [],
-            quickAdds: [],
-            groceries: [],
-            themeColor: '#b5eadd',
-            isDarkMode: false
-        };
-        joinGroup(gId, true, initialData);
-    });
+            // Create new or overwrite existing
+            sounds.success();
+            const initialData = {
+                budget,
+                payday,
+                customMonthLength,
+                customCategories: [],
+                purchases: [],
+                quickAdds: [],
+                groceries: [],
+                themeColor: '#b5eadd',
+                isDarkMode: false
+            };
+            joinGroup(gId, true, initialData);
+        })
+        .catch((error) => {
+            console.error("Firebase database once() error:", error);
+            alert("Database Connection Failed.\n\nDetails: " + error.message + "\n\n1. Ensure you have created your Realtime Database in the console.\n2. Ensure your rules allow Read & Write access (e.g., set to true during test mode).");
+        });
 });
 
 // Reset app / Leave Group
