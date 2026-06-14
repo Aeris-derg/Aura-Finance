@@ -60,6 +60,7 @@ let state = {
     customMonthLength: 0,
     customCategories: [],
     purchases: [],
+    incomes: [],
     quickAdds: [],
     groceries: [],
     themeColor: '#b5eadd',
@@ -208,9 +209,14 @@ function calculateQuotaForDate(targetDate) {
         pDate.setHours(0,0,0,0);
         return pDate >= startOfPeriod && pDate < targetStartOfDay;
     });
-    
+    const pastIncomes = (state.incomes || []).filter(inc => {
+        const iDate = new Date(inc.date);
+        iDate.setHours(0,0,0,0);
+        return iDate >= startOfPeriod && iDate < targetStartOfDay;
+    });
+    const totalIncomePast = pastIncomes.reduce((sum, inc) => sum + parseFloat(inc.amount), 0);
     const totalSpentPast = pastPurchases.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-    carryover = accumulatedBudget - totalSpentPast;
+    carryover = accumulatedBudget - totalSpentPast + totalIncomePast;
 
     const todaysPurchases = state.purchases.filter(p => {
         const pDate = new Date(p.date);
@@ -234,8 +240,13 @@ function getRemainingBudgetForPeriod(targetDate) {
         const pDate = new Date(p.date);
         return pDate >= bounds.startDate && pDate < bounds.endDate;
     });
+    const periodIncomes = (state.incomes || []).filter(inc => {
+        const iDate = new Date(inc.date);
+        return iDate >= bounds.startDate && iDate < bounds.endDate;
+    });
     const totalSpent = periodPurchases.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-    return state.budget - totalSpent;
+    const totalIncome = periodIncomes.reduce((sum, inc) => sum + parseFloat(inc.amount), 0);
+    return state.budget + totalIncome - totalSpent;
 }
 
 function getPurchasesForPeriod(targetDate) {
@@ -351,12 +362,18 @@ function updateCalendar() {
 
         const dayPurchases = state.purchases.filter(p => new Date(p.date).toDateString() === cellDate.toDateString());
         const dayTotal = dayPurchases.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+        const dayIncomes = (state.incomes || []).filter(inc => new Date(inc.date).toDateString() === cellDate.toDateString());
+        const dayIncomeTotal = dayIncomes.reduce((sum, inc) => sum + parseFloat(inc.amount), 0);
 
         if (dayTotal > 0) cell.classList.add('has-spending');
+        if (dayIncomeTotal > 0) cell.classList.add('has-income');
+
+        const spendLine = dayTotal > 0 ? `<div class="cal-amount spent">-${formatMoney(dayTotal)}</div>` : '';
+        const incomeLine = dayIncomeTotal > 0 ? `<div class="cal-amount income">+${formatMoney(dayIncomeTotal)}</div>` : '';
 
         cell.innerHTML = `
             <div class="cal-date">${day}</div>
-            <div class="cal-amount">${dayTotal > 0 ? '-' + formatMoney(dayTotal) : ''}</div>
+            ${spendLine}${incomeLine}
         `;
 
         cell.onclick = () => {
@@ -437,6 +454,7 @@ function updateUI() {
     renderPurchases();
     renderQuickAdds();
     renderGroceries();
+    renderIncomes();
     updateChart();
     updateCalendar();
 }
@@ -501,6 +519,33 @@ function renderGroceries() {
             </div>
         `;
         li.onclick = () => toggleGrocery(g.id);
+        list.appendChild(li);
+    });
+}
+
+function renderIncomes() {
+    const list = document.getElementById('income-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const viewStr = viewingDate.toDateString();
+    const viewedIncomes = (state.incomes || []).filter(inc => new Date(inc.date).toDateString() === viewStr).reverse();
+
+    if (viewedIncomes.length === 0) {
+        list.innerHTML = '<li style="justify-content:center; color: var(--text-secondary)">No income logged on this date.</li>';
+        return;
+    }
+
+    viewedIncomes.forEach(inc => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <div class="item-details">
+                <span class="item-name">${inc.note || 'Income'}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap: 10px;">
+                <span class="item-amount income">+${formatMoney(inc.amount)}</span>
+                <button class="btn icon-btn delete" onclick="deleteIncome('${inc.id}')"><i class="ri-delete-bin-line"></i></button>
+            </div>
+        `;
         list.appendChild(li);
     });
 }
@@ -770,6 +815,32 @@ window.toggleGrocery = (id) => {
         sounds.click();
         syncState();
     }
+};
+
+// Income Form
+document.getElementById('income-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById('income-amount').value);
+    const note = document.getElementById('income-note').value.trim() || 'Income';
+    if (!amount || amount <= 0) return;
+
+    if (!state.incomes) state.incomes = [];
+    state.incomes.push({
+        id: Date.now().toString(),
+        amount,
+        note,
+        date: viewingDate.toISOString()
+    });
+
+    sounds.success();
+    e.target.reset();
+    syncState();
+});
+
+window.deleteIncome = (id) => {
+    state.incomes = (state.incomes || []).filter(inc => inc.id !== id);
+    sounds.delete();
+    syncState();
 };
 
 // Global click sound

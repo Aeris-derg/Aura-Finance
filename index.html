@@ -192,6 +192,28 @@
                     </form>
                     <ul id="grocery-list" class="item-list checkable-list"></ul>
                 </section>
+
+                <!-- Add Income Section -->
+                <section class="card glass">
+                    <h3><i class="ri-add-circle-line"></i> Add Income</h3>
+                    <p class="section-desc">Log any extra money received. It will be added to your remaining budget and shown in the calendar.</p>
+                    <form id="income-form">
+                        <div class="form-group">
+                            <label for="income-amount">Amount (£)</label>
+                            <input type="number" id="income-amount" required min="0.01" step="0.01" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="income-note">Note</label>
+                            <input type="text" id="income-note" placeholder="e.g. Freelance payment, Gift...">
+                        </div>
+                        <button type="submit" class="btn primary full-width income-btn">Add Income</button>
+                    </form>
+                    <div class="recent-purchases" style="margin-top: 16px;">
+                        <h4>Income on this date</h4>
+                        <ul id="income-list" class="item-list"></ul>
+                    </div>
+                </section>
+
             </div>
         </main>
     </div>

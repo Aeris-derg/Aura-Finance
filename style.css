@@ -286,9 +286,23 @@ body.dark-theme .cal-cell:hover { background: rgba(0,0,0,0.5); }
 .cal-date { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: auto;}
 .cal-amount { font-size: 0.75rem; font-weight: 700; color: var(--text-primary); text-align: center; margin-top: 5px; }
 
-.cal-cell.has-spending .cal-amount { color: var(--danger-color); }
+.cal-cell.has-spending .cal-amount.spent { color: var(--danger-color); }
+.cal-cell.has-income .cal-amount.income { color: var(--success-color); }
 .cal-cell.selected { border: 2px solid var(--accent-color); background: rgba(255,255,255,0.9); }
 body.dark-theme .cal-cell.selected { background: rgba(0,0,0,0.6); }
+
+/* Income Amount Highlight */
+.item-amount.income { color: var(--success-color); }
+
+/* Income Button Override */
+.btn.primary.income-btn {
+    background: linear-gradient(135deg, var(--success-color), #059669);
+    color: white;
+}
+.btn.primary.income-btn:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 4px 14px rgba(16,185,129,0.3);
+}
 
 /* Forms & Inputs */
 .form-group {
