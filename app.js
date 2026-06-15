@@ -531,13 +531,10 @@ function updateUI() {
     }
 
     const showRemaining = !hideRemaining;
-    const showStreaks = !!(state.streakOptOverspending || state.streakOptTakeout || state.streakOptSaving);
 
     if (dashboardSection) {
         dashboardSection.classList.remove('full-width');
-        if (showRemaining && showStreaks) {
-            dashboardSection.style.gridTemplateColumns = '2fr 1.1fr 1.1fr';
-        } else if (showRemaining || showStreaks) {
+        if (showRemaining) {
             dashboardSection.style.gridTemplateColumns = '2fr 1.2fr';
         } else {
             dashboardSection.style.gridTemplateColumns = '1fr';
@@ -1147,13 +1144,27 @@ document.getElementById('debt-form').addEventListener('submit', (e) => {
                     const targetIsDaily = (groupData.budgetType || 'monthly') === 'daily';
                     if (type === 'owed_by_me') {
                         if (targetIsDaily) {
-                            groupData.dailyBudget = (parseFloat(groupData.dailyBudget) || 0) - amount;
+                            if (!groupData.purchases) groupData.purchases = [];
+                            groupData.purchases.push({
+                                id: Date.now().toString() + '-target-debt-out',
+                                amount: amount,
+                                category: 'Debt',
+                                comment: `[Debt Lent] to Group: ${currentGroupId}`,
+                                date: viewingDate.toISOString()
+                            });
                         } else {
                             groupData.budget = (parseFloat(groupData.budget) || 0) - amount;
                         }
                     } else if (type === 'owed_to_me') {
                         if (targetIsDaily) {
-                            groupData.dailyBudget = (parseFloat(groupData.dailyBudget) || 0) + amount;
+                            if (!groupData.incomes) groupData.incomes = [];
+                            groupData.incomes.push({
+                                id: Date.now().toString() + '-target-debt-in',
+                                amount: amount,
+                                category: 'Debt',
+                                comment: `[Debt Borrowed] from Group: ${currentGroupId}`,
+                                date: viewingDate.toISOString()
+                            });
                         } else {
                             groupData.budget = (parseFloat(groupData.budget) || 0) + amount;
                         }
@@ -1180,13 +1191,27 @@ document.getElementById('debt-form').addEventListener('submit', (e) => {
                         const currentIsDaily = (state.budgetType || 'monthly') === 'daily';
                         if (type === 'owed_by_me') {
                             if (currentIsDaily) {
-                                state.dailyBudget = (parseFloat(state.dailyBudget) || 0) + amount;
+                                if (!state.incomes) state.incomes = [];
+                                state.incomes.push({
+                                    id: debtId + '-local-debt-in',
+                                    amount: amount,
+                                    category: 'Debt',
+                                    comment: `[Debt Borrowed] from Group: ${targetGroupId}`,
+                                    date: viewingDate.toISOString()
+                                });
                             } else {
                                 state.budget = (parseFloat(state.budget) || 0) + amount;
                             }
                         } else if (type === 'owed_to_me') {
                             if (currentIsDaily) {
-                                state.dailyBudget = (parseFloat(state.dailyBudget) || 0) - amount;
+                                if (!state.purchases) state.purchases = [];
+                                state.purchases.push({
+                                    id: debtId + '-local-debt-out',
+                                    amount: amount,
+                                    category: 'Debt',
+                                    comment: `[Debt Lent] to Group: ${targetGroupId}`,
+                                    date: viewingDate.toISOString()
+                                });
                             } else {
                                 state.budget = (parseFloat(state.budget) || 0) - amount;
                             }
@@ -1252,14 +1277,28 @@ window.settleDebt = (id) => {
             if (debt.type === 'owed_by_me') {
                 const targetIsDaily = (groupData.budgetType || 'monthly') === 'daily';
                 if (targetIsDaily) {
-                    groupData.dailyBudget = (parseFloat(groupData.dailyBudget) || 0) + debt.amount;
+                    if (!groupData.incomes) groupData.incomes = [];
+                    groupData.incomes.push({
+                        id: Date.now().toString() + '-target-settle-in',
+                        amount: debt.amount,
+                        category: 'Debt',
+                        comment: `[Debt Repayment Received] from Group: ${currentGroupId}`,
+                        date: viewingDate.toISOString()
+                    });
                 } else {
                     groupData.budget = (parseFloat(groupData.budget) || 0) + debt.amount;
                 }
             } else if (debt.type === 'owed_to_me') {
                 const targetIsDaily = (groupData.budgetType || 'monthly') === 'daily';
                 if (targetIsDaily) {
-                    groupData.dailyBudget = (parseFloat(groupData.dailyBudget) || 0) - debt.amount;
+                    if (!groupData.purchases) groupData.purchases = [];
+                    groupData.purchases.push({
+                        id: Date.now().toString() + '-target-settle-out',
+                        amount: debt.amount,
+                        category: 'Debt',
+                        comment: `[Debt Repaid] to Group: ${currentGroupId}`,
+                        date: viewingDate.toISOString()
+                    });
                 } else {
                     groupData.budget = (parseFloat(groupData.budget) || 0) - debt.amount;
                 }
@@ -1274,13 +1313,27 @@ window.settleDebt = (id) => {
                 const currentIsDaily = (state.budgetType || 'monthly') === 'daily';
                 if (debt.type === 'owed_to_me') {
                     if (currentIsDaily) {
-                        state.dailyBudget = (parseFloat(state.dailyBudget) || 0) + debt.amount;
+                        if (!state.incomes) state.incomes = [];
+                        state.incomes.push({
+                            id: Date.now().toString() + '-local-settle-in',
+                            amount: debt.amount,
+                            category: 'Debt',
+                            comment: `[Debt Repayment Received] from Group: ${debt.linkedGroupId}`,
+                            date: viewingDate.toISOString()
+                        });
                     } else {
                         state.budget = (parseFloat(state.budget) || 0) + debt.amount;
                     }
                 } else if (debt.type === 'owed_by_me') {
                     if (currentIsDaily) {
-                        state.dailyBudget = (parseFloat(state.dailyBudget) || 0) - debt.amount;
+                        if (!state.purchases) state.purchases = [];
+                        state.purchases.push({
+                            id: Date.now().toString() + '-local-settle-out',
+                            amount: debt.amount,
+                            category: 'Debt',
+                            comment: `[Debt Repaid] to Group: ${debt.linkedGroupId}`,
+                            date: viewingDate.toISOString()
+                        });
                     } else {
                         state.budget = (parseFloat(state.budget) || 0) - debt.amount;
                     }
@@ -1452,19 +1505,30 @@ function switchTab(tabName) {
     if (!gridLayout) return;
 
     if (tabName === 'expenses') {
+        gridLayout.classList.remove('two-cols');
         gridLayout.style.display = 'grid';
         ['card-log-purchase', 'card-quick-add', 'card-groceries'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.remove('hidden');
         });
+    } else if (tabName === 'budget') {
+        gridLayout.classList.add('two-cols');
+        gridLayout.style.display = 'grid';
+        ['card-streaks', 'card-manage-budget'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('hidden');
+                el.style.maxWidth = '';
+                el.style.margin = '';
+            }
+        });
     } else {
+        gridLayout.classList.remove('two-cols');
         gridLayout.style.display = 'block';
         let targetId = '';
         if (tabName === 'income') targetId = 'card-add-income';
-        else if (tabName === 'budget') targetId = 'card-manage-budget';
         else if (tabName === 'debts') targetId = 'card-debts-tracker';
         else if (tabName === 'subscriptions') targetId = 'card-subscriptions';
-        else if (tabName === 'streaks') targetId = 'card-streaks';
 
         if (targetId) {
             const el = document.getElementById(targetId);
@@ -1656,20 +1720,22 @@ function calculateStreakForType(type) {
 }
 
 function renderStreaks() {
-    const card = document.getElementById('streaks-card');
+    const card = document.getElementById('card-streaks');
     const container = document.getElementById('streaks-container');
     if (!card || !container) return;
 
     const showOverspending = !!state.streakOptOverspending;
     const showTakeout = !!state.streakOptTakeout;
     const showSaving = !!state.streakOptSaving;
+    const activeTitle = document.getElementById('active-streaks-title');
 
     if (!showOverspending && !showTakeout && !showSaving) {
-        card.classList.add('hidden');
+        if (activeTitle) activeTitle.style.display = 'none';
+        container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 0.95rem; margin-top: 10px;">No streaks enabled. Check options above to begin tracking.</div>';
         return;
     }
 
-    card.classList.remove('hidden');
+    if (activeTitle) activeTitle.style.display = 'flex';
     container.innerHTML = '';
 
     const renderItem = (title, streakCount, startDateStr, color) => {

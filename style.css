@@ -643,3 +643,13 @@ body.dark-theme .streak-item {
     0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255, 159, 67, 0.4)); }
     100% { transform: scale(1.15); filter: drop-shadow(0 0 8px rgba(255, 159, 67, 0.8)); }
 }
+
+.grid-layout.two-cols {
+    grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 900px) {
+    .grid-layout.two-cols {
+        grid-template-columns: 1fr;
+    }
+}
