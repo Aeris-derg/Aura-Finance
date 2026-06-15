@@ -162,6 +162,9 @@
                 <button class="app-tab-btn" data-tab="subscriptions">
                     <i class="ri-calendar-todo-line"></i> Subscriptions
                 </button>
+                <button class="app-tab-btn" data-tab="streaks">
+                    <i class="ri-fire-line" style="color: #ff9f43;"></i> Streaks
+                </button>
             </div>
 
             <div class="grid-layout">
@@ -279,22 +282,25 @@
                             <label for="hide-remaining-budget" style="margin: 0; cursor: pointer; display: inline; font-size: 0.95rem;">Hide Remaining Budget Card</label>
                         </div>
                     </form>
+                </section>
+
+                <!-- Streaks Settings Section -->
+                <section id="card-streaks" class="card glass hidden">
+                    <h3><i class="ri-fire-line" style="color: #ff9f43;"></i> Streaks Settings</h3>
+                    <p class="section-desc">Toggle the streaks you want to track. Your streak begins from the day you enable it.</p>
                     
-                    <div class="streaks-settings-section" style="margin-top: 25px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
-                        <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="ri-fire-line" style="color: #ff9f43; font-size: 1.2rem;"></i> Streaks Settings</h4>
-                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <input type="checkbox" id="streak-opt-overspending" style="width: auto; margin: 0; cursor: pointer;">
-                                <label for="streak-opt-overspending" style="margin: 0; cursor: pointer; font-size: 0.95rem;">Track Streak: Days without over-spending</label>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <input type="checkbox" id="streak-opt-takeout" style="width: auto; margin: 0; cursor: pointer;">
-                                <label for="streak-opt-takeout" style="margin: 0; cursor: pointer; font-size: 0.95rem;">Track Streak: Days without takeout</label>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <input type="checkbox" id="streak-opt-saving" style="width: auto; margin: 0; cursor: pointer;">
-                                <label for="streak-opt-saving" style="margin: 0; cursor: pointer; font-size: 0.95rem;">Track Streak: Days with saving (surplus)</label>
-                            </div>
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="streak-opt-overspending" style="width: auto; margin: 0; cursor: pointer;">
+                            <label for="streak-opt-overspending" style="margin: 0; cursor: pointer; font-size: 0.95rem;">Track Streak: Days without over-spending</label>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="streak-opt-takeout" style="width: auto; margin: 0; cursor: pointer;">
+                            <label for="streak-opt-takeout" style="margin: 0; cursor: pointer; font-size: 0.95rem;">Track Streak: Days without takeout</label>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="streak-opt-saving" style="width: auto; margin: 0; cursor: pointer;">
+                            <label for="streak-opt-saving" style="margin: 0; cursor: pointer; font-size: 0.95rem;">Track Streak: Days with saving (surplus)</label>
                         </div>
                     </div>
                 </section>

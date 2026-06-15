@@ -1439,7 +1439,8 @@ function switchTab(tabName) {
         'card-add-income',
         'card-manage-budget',
         'card-debts-tracker',
-        'card-subscriptions'
+        'card-subscriptions',
+        'card-streaks'
     ];
     cardIds.forEach(id => {
         const el = document.getElementById(id);
@@ -1463,6 +1464,7 @@ function switchTab(tabName) {
         else if (tabName === 'budget') targetId = 'card-manage-budget';
         else if (tabName === 'debts') targetId = 'card-debts-tracker';
         else if (tabName === 'subscriptions') targetId = 'card-subscriptions';
+        else if (tabName === 'streaks') targetId = 'card-streaks';
 
         if (targetId) {
             const el = document.getElementById(targetId);
