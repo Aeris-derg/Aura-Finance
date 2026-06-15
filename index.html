@@ -35,8 +35,15 @@
                     <input type="text" id="group-id" required placeholder="e.g. smith-family">
                 </div>
                 <div class="form-group">
-                    <label for="monthly-budget">Monthly Budget (£)</label>
-                    <input type="number" id="monthly-budget" required min="1" step="0.01">
+                    <label for="setup-budget-type">Budget Type</label>
+                    <select id="setup-budget-type">
+                        <option value="monthly">Monthly Budget</option>
+                        <option value="daily">Daily Budget</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label id="setup-budget-label" for="setup-budget-amount">Monthly Budget (£)</label>
+                    <input type="number" id="setup-budget-amount" required min="1" step="0.01">
                 </div>
                 <div class="form-group">
                     <label for="payday">Payday (Day of the month)</label>
@@ -79,14 +86,14 @@
 
         <main>
             <!-- Dashboard Section -->
-            <section class="dashboard">
+            <section class="dashboard" id="dashboard-section">
                 <div class="card glass hero-card">
                     <h3 id="quota-title">Today's Quota</h3>
                     <div class="amount" id="daily-quota">£0.00</div>
                     <div class="carryover">Base: <span id="base-amount">£0.00</span> | Carryover: <span id="carryover-amount">£0.00</span></div>
                 </div>
                 
-                <div class="card glass secondary-card">
+                <div class="card glass secondary-card" id="remaining-budget-card">
                     <h3>Remaining Budget</h3>
                     <div class="amount small" id="remaining-budget">£0.00</div>
                     <div class="progress-container">
@@ -211,6 +218,71 @@
                     <div class="recent-purchases" style="margin-top: 16px;">
                         <h4>Income on this date</h4>
                         <ul id="income-list" class="item-list"></ul>
+                    </div>
+                </section>
+
+                <!-- Manage Budget Section -->
+                <section class="card glass">
+                    <h3><i class="ri-settings-4-line"></i> Manage Budget</h3>
+                    <p class="section-desc">Change your budget mode or amount, and add budget top-ups for the current period.</p>
+                    
+                    <form id="adjust-budget-form">
+                        <div class="form-group">
+                            <label for="adjust-budget-type">Budget Type</label>
+                            <select id="adjust-budget-type">
+                                <option value="monthly">Monthly Budget</option>
+                                <option value="daily">Daily Budget</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label id="adjust-budget-label" for="adjust-budget-amount">Budget Amount (£)</label>
+                            <input type="number" id="adjust-budget-amount" required min="1" step="0.01">
+                        </div>
+                        <button type="submit" class="btn primary full-width">Update Base Budget</button>
+                        <div class="form-group" style="margin-top: 15px; display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+                            <input type="checkbox" id="hide-remaining-budget" style="width: auto; margin: 0; cursor: pointer;">
+                            <label for="hide-remaining-budget" style="margin: 0; cursor: pointer; display: inline; font-size: 0.95rem;">Hide Remaining Budget Card</label>
+                        </div>
+                    </form>
+
+                    <div style="margin-top: 20px; border-top: 1px solid var(--glass-border); padding-top: 15px;">
+                        <h4>Top up Budget</h4>
+                        <form id="topup-budget-form" class="inline-form" style="margin-top: 10px;">
+                            <input type="number" id="topup-amount" required min="0.01" step="0.01" placeholder="Amount" style="min-width: 0; flex: 1;">
+                            <input type="text" id="topup-note" placeholder="Note (e.g. Bonus)" style="min-width: 0; flex: 2;">
+                            <button type="submit" class="btn icon-btn"><i class="ri-add-line"></i></button>
+                        </form>
+                        <ul id="topup-list" class="item-list" style="max-height: 120px;"></ul>
+                    </div>
+                </section>
+
+                <!-- Debts Tracker Section -->
+                <section class="card glass">
+                    <h3><i class="ri-hand-coin-line"></i> Debts Tracker</h3>
+                    <p class="section-desc">Keep track of who owes you and who you owe. Settle debts to optionally log them in your budget.</p>
+                    
+                    <form id="debt-form">
+                        <div class="form-group">
+                            <label for="debt-type">Type</label>
+                            <select id="debt-type">
+                                <option value="owed_by_me">I owe someone (Debt)</option>
+                                <option value="owed_to_me">Someone owes me (Loan)</option>
+                            </select>
+                        </div>
+                        <div class="inline-form" style="margin-bottom: 10px;">
+                            <input type="text" id="debt-person" required placeholder="Person (e.g. Alice)" style="min-width: 0; flex: 2;">
+                            <input type="number" id="debt-amount" required min="0.01" step="0.01" placeholder="Amount (£)" style="min-width: 0; flex: 1.5;">
+                        </div>
+                        <div class="form-group">
+                            <label for="debt-note">Note / Description</label>
+                            <input type="text" id="debt-note" placeholder="e.g. Pizza, Rent share...">
+                        </div>
+                        <button type="submit" class="btn primary full-width">Add Debt</button>
+                    </form>
+
+                    <div style="margin-top: 20px; border-top: 1px solid var(--glass-border); padding-top: 15px;">
+                        <h4>Active Debts</h4>
+                        <ul id="debt-list" class="item-list" style="max-height: 180px;"></ul>
                     </div>
                 </section>
 

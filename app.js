@@ -56,6 +56,11 @@ db.ref('.info/connected').on('value', (snap) => {
 
 let state = {
     budget: 0,
+    dailyBudget: 0,
+    budgetType: 'monthly', // 'monthly' or 'daily'
+    budgetTopUps: [],
+    debts: [],
+    hideRemainingBudget: false,
     payday: 1,
     customMonthLength: 0,
     customCategories: [],
@@ -189,10 +194,22 @@ function getDaysInPayPeriod(startDate, endDate) {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 30;
 }
 
+function getTopUpsForPeriod(targetDate) {
+    const bounds = getPayPeriodBounds(targetDate);
+    return (state.budgetTopUps || []).filter(t => {
+        const tDate = new Date(t.date);
+        return tDate >= bounds.startDate && tDate < bounds.endDate;
+    });
+}
+
 function calculateQuotaForDate(targetDate) {
     const bounds = getPayPeriodBounds(targetDate);
     const daysInPeriod = getDaysInPayPeriod(bounds.startDate, bounds.endDate);
-    const baseDailyQuota = state.budget / daysInPeriod;
+    
+    const budgetType = state.budgetType || 'monthly';
+    const baseDailyQuota = budgetType === 'daily'
+        ? (state.dailyBudget || 0)
+        : (state.budget || 0) / daysInPeriod;
 
     let carryover = 0;
     const targetStartOfDay = new Date(targetDate);
@@ -204,6 +221,15 @@ function calculateQuotaForDate(targetDate) {
     const daysPassed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
     const accumulatedBudget = daysPassed * baseDailyQuota;
+    
+    // Past top-ups in this period
+    const pastTopUps = (state.budgetTopUps || []).filter(t => {
+        const tDate = new Date(t.date);
+        tDate.setHours(0,0,0,0);
+        return tDate >= startOfPeriod && tDate < targetStartOfDay;
+    });
+    const totalTopUpsPast = pastTopUps.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
     const pastPurchases = state.purchases.filter(p => {
         const pDate = new Date(p.date);
         pDate.setHours(0,0,0,0);
@@ -216,7 +242,7 @@ function calculateQuotaForDate(targetDate) {
     });
     const totalIncomePast = pastIncomes.reduce((sum, inc) => sum + parseFloat(inc.amount), 0);
     const totalSpentPast = pastPurchases.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-    carryover = accumulatedBudget - totalSpentPast + totalIncomePast;
+    carryover = accumulatedBudget - totalSpentPast + totalIncomePast + totalTopUpsPast;
 
     const todaysPurchases = state.purchases.filter(p => {
         const pDate = new Date(p.date);
@@ -225,7 +251,14 @@ function calculateQuotaForDate(targetDate) {
     });
     const spentToday = todaysPurchases.reduce((sum, p) => sum + parseFloat(p.amount), 0);
 
-    const currentQuota = baseDailyQuota + carryover - spentToday;
+    const todaysTopUps = (state.budgetTopUps || []).filter(t => {
+        const tDate = new Date(t.date);
+        tDate.setHours(0,0,0,0);
+        return tDate.getTime() === targetStartOfDay.getTime();
+    });
+    const totalTopUpsToday = todaysTopUps.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+    const currentQuota = baseDailyQuota + carryover + totalTopUpsToday - spentToday;
     
     return {
         base: baseDailyQuota,
@@ -244,9 +277,17 @@ function getRemainingBudgetForPeriod(targetDate) {
         const iDate = new Date(inc.date);
         return iDate >= bounds.startDate && iDate < bounds.endDate;
     });
+    const periodTopUps = getTopUpsForPeriod(targetDate);
+    
     const totalSpent = periodPurchases.reduce((sum, p) => sum + parseFloat(p.amount), 0);
     const totalIncome = periodIncomes.reduce((sum, inc) => sum + parseFloat(inc.amount), 0);
-    return state.budget + totalIncome - totalSpent;
+    const totalTopUps = periodTopUps.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    
+    const baseBudget = (state.budgetType || 'monthly') === 'daily'
+        ? ((state.dailyBudget || 0) * getDaysInPayPeriod(bounds.startDate, bounds.endDate))
+        : (state.budget || 0);
+        
+    return baseBudget + totalTopUps + totalIncome - totalSpent;
 }
 
 function getPurchasesForPeriod(targetDate) {
@@ -433,10 +474,50 @@ function updateUI() {
     const remaining = getRemainingBudgetForPeriod(viewingDate);
     document.getElementById('remaining-budget').textContent = formatMoney(remaining);
     
-    const progressPercent = Math.max(0, Math.min(100, (remaining / state.budget) * 100));
+    const bounds = getPayPeriodBounds(viewingDate);
+    const daysInPeriod = getDaysInPayPeriod(bounds.startDate, bounds.endDate);
+    const baseBudget = (state.budgetType || 'monthly') === 'daily'
+        ? ((state.dailyBudget || 0) * daysInPeriod)
+        : (state.budget || 0);
+    const periodTopUps = getTopUpsForPeriod(viewingDate);
+    const totalTopUps = periodTopUps.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    const totalBudget = baseBudget + totalTopUps;
+    
+    const progressPercent = totalBudget > 0 ? Math.max(0, Math.min(100, (remaining / totalBudget) * 100)) : 0;
     const progressBar = document.getElementById('budget-progress');
     progressBar.style.width = `${progressPercent}%`;
     progressBar.style.background = progressPercent < 20 ? 'var(--danger-color)' : 'var(--accent-color)';
+
+    // Update adjust budget form fields if visible
+    const adjType = document.getElementById('adjust-budget-type');
+    const adjAmt = document.getElementById('adjust-budget-amount');
+    if (adjType && adjAmt) {
+        adjType.value = state.budgetType || 'monthly';
+        adjAmt.value = (state.budgetType || 'monthly') === 'daily' ? (state.dailyBudget || 0) : (state.budget || 0);
+        const label = document.getElementById('adjust-budget-label');
+        if (label) {
+            label.textContent = (state.budgetType || 'monthly') === 'daily' ? "Daily Budget (£)" : "Monthly Budget (£)";
+        }
+    }
+
+    // Toggle Remaining Budget visibility
+    const hideRemaining = !!state.hideRemainingBudget;
+    const remainingCard = document.getElementById('remaining-budget-card');
+    const dashboardSection = document.getElementById('dashboard-section');
+    const hideCheckbox = document.getElementById('hide-remaining-budget');
+    
+    if (remainingCard && dashboardSection) {
+        if (hideRemaining) {
+            remainingCard.classList.add('hidden');
+            dashboardSection.classList.add('full-width');
+        } else {
+            remainingCard.classList.remove('hidden');
+            dashboardSection.classList.remove('full-width');
+        }
+    }
+    if (hideCheckbox) {
+        hideCheckbox.checked = hideRemaining;
+    }
 
     const catSelect = document.getElementById('purchase-category');
     Array.from(catSelect.options).forEach(opt => {
@@ -455,6 +536,8 @@ function updateUI() {
     renderQuickAdds();
     renderGroceries();
     renderIncomes();
+    renderTopUps();
+    renderDebts();
     updateChart();
     updateCalendar();
 }
@@ -643,6 +726,16 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
         });
 });
 
+// Setup Budget Type Label Toggle
+document.getElementById('setup-budget-type').addEventListener('change', (e) => {
+    const label = document.getElementById('setup-budget-label');
+    if (e.target.value === 'daily') {
+        label.textContent = "Daily Budget (£)";
+    } else {
+        label.textContent = "Monthly Budget (£)";
+    }
+});
+
 // Setup Form Submission (New Group)
 document.getElementById('setup-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -651,7 +744,8 @@ document.getElementById('setup-form').addEventListener('submit', (e) => {
         alert("Please enter a valid Group ID (letters, numbers, dashes, and underscores only).");
         return;
     }
-    const budget = parseFloat(document.getElementById('monthly-budget').value);
+    const budgetType = document.getElementById('setup-budget-type').value;
+    const budgetAmount = parseFloat(document.getElementById('setup-budget-amount').value);
     const payday = parseInt(document.getElementById('payday').value);
     const customMonthLength = parseInt(document.getElementById('custom-month-length').value) || 0;
 
@@ -659,7 +753,7 @@ document.getElementById('setup-form').addEventListener('submit', (e) => {
     db.ref('groups/' + gId).once('value')
         .then((snapshot) => {
             const existingData = snapshot.val();
-            if (existingData && existingData.budget > 0) {
+            if (existingData && (existingData.budget > 0 || existingData.dailyBudget > 0)) {
                 const acceptExisting = confirm(`The group "${gId}" already exists! Do you want to join it and download its current settings? If you click Cancel, you will overwrite the group with your new settings.`);
                 if (acceptExisting) {
                     // Join existing
@@ -672,7 +766,12 @@ document.getElementById('setup-form').addEventListener('submit', (e) => {
             // Create new or overwrite existing
             sounds.success();
             const initialData = {
-                budget,
+                budget: budgetType === 'monthly' ? budgetAmount : 0,
+                dailyBudget: budgetType === 'daily' ? budgetAmount : 0,
+                budgetType,
+                budgetTopUps: [],
+                debts: [],
+                hideRemainingBudget: false,
                 payday,
                 customMonthLength,
                 customCategories: [],
@@ -842,6 +941,200 @@ window.deleteIncome = (id) => {
     sounds.delete();
     syncState();
 };
+
+// Adjust budget form event listener
+document.getElementById('adjust-budget-type').addEventListener('change', (e) => {
+    const label = document.getElementById('adjust-budget-label');
+    if (e.target.value === 'daily') {
+        label.textContent = "Daily Budget (£)";
+    } else {
+        label.textContent = "Monthly Budget (£)";
+    }
+});
+
+document.getElementById('adjust-budget-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const type = document.getElementById('adjust-budget-type').value;
+    const amount = parseFloat(document.getElementById('adjust-budget-amount').value);
+    
+    state.budgetType = type;
+    if (type === 'daily') {
+        state.dailyBudget = amount;
+    } else {
+        state.budget = amount;
+    }
+    
+    sounds.success();
+    syncState();
+    alert("Base budget updated successfully!");
+});
+
+// Top-up budget form event listener
+document.getElementById('topup-budget-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById('topup-amount').value);
+    const note = document.getElementById('topup-note').value.trim() || 'Budget Top-up';
+    if (!amount || amount <= 0) return;
+
+    if (!state.budgetTopUps) state.budgetTopUps = [];
+    state.budgetTopUps.push({
+        id: Date.now().toString(),
+        amount,
+        note,
+        date: viewingDate.toISOString()
+    });
+
+    sounds.success();
+    e.target.reset();
+    syncState();
+});
+
+window.deleteTopUp = (id) => {
+    state.budgetTopUps = (state.budgetTopUps || []).filter(t => t.id !== id);
+    sounds.delete();
+    syncState();
+};
+
+function renderTopUps() {
+    const list = document.getElementById('topup-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const bounds = getPayPeriodBounds(viewingDate);
+    const periodTopUps = (state.budgetTopUps || []).filter(t => {
+        const tDate = new Date(t.date);
+        return tDate >= bounds.startDate && tDate < bounds.endDate;
+    }).reverse();
+
+    if (periodTopUps.length === 0) {
+        list.innerHTML = '<li style="justify-content:center; color: var(--text-secondary); font-size: 0.85rem; padding: 6px;">No top-ups in this period.</li>';
+        return;
+    }
+
+    periodTopUps.forEach(t => {
+        const li = document.createElement('li');
+        li.style.padding = '8px 12px';
+        li.innerHTML = `
+            <div class="item-details">
+                <span class="item-name" style="font-size: 0.9rem;">${t.note}</span>
+                <span class="item-meta" style="font-size: 0.75rem;">${new Date(t.date).toLocaleDateString()}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap: 8px;">
+                <span class="item-amount" style="color: var(--success-color); font-size: 0.9rem;">+${formatMoney(t.amount)}</span>
+                <button class="btn icon-btn delete" style="padding: 4px;" onclick="deleteTopUp('${t.id}')"><i class="ri-close-line"></i></button>
+            </div>
+        `;
+        list.appendChild(li);
+    });
+}
+
+// Debt Form event listener
+document.getElementById('debt-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const type = document.getElementById('debt-type').value;
+    const person = document.getElementById('debt-person').value.trim();
+    const amount = parseFloat(document.getElementById('debt-amount').value);
+    const note = document.getElementById('debt-note').value.trim() || 'Debt';
+
+    if (!person || !amount || amount <= 0) return;
+
+    if (!state.debts) state.debts = [];
+    state.debts.push({
+        id: Date.now().toString(),
+        type,
+        person,
+        amount,
+        note,
+        status: 'outstanding',
+        date: viewingDate.toISOString()
+    });
+
+    sounds.success();
+    e.target.reset();
+    syncState();
+});
+
+window.settleDebt = (id) => {
+    const debt = (state.debts || []).find(d => d.id === id);
+    if (!debt) return;
+
+    let logToBudget = false;
+    if (debt.type === 'owed_by_me') {
+        logToBudget = confirm(`Do you want to log settling this debt of ${formatMoney(debt.amount)} to ${debt.person} as an Expense (Purchase) in your budget?`);
+    } else {
+        logToBudget = confirm(`Do you want to log receiving ${formatMoney(debt.amount)} from ${debt.person} as Income in your budget?`);
+    }
+
+    if (logToBudget) {
+        if (debt.type === 'owed_by_me') {
+            state.purchases.push({
+                id: Date.now().toString(),
+                amount: debt.amount,
+                category: 'Bills',
+                comment: `Settle debt to ${debt.person}: ${debt.note}`,
+                date: viewingDate.toISOString()
+            });
+        } else {
+            if (!state.incomes) state.incomes = [];
+            state.incomes.push({
+                id: Date.now().toString(),
+                amount: debt.amount,
+                note: `Settle loan to ${debt.person}: ${debt.note}`,
+                date: viewingDate.toISOString()
+            });
+        }
+    }
+
+    debt.status = 'settled';
+    sounds.success();
+    syncState();
+};
+
+window.deleteDebt = (id) => {
+    state.debts = (state.debts || []).filter(d => d.id !== id);
+    sounds.delete();
+    syncState();
+};
+
+function renderDebts() {
+    const list = document.getElementById('debt-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const activeDebts = (state.debts || []).filter(d => d.status === 'outstanding').reverse();
+
+    if (activeDebts.length === 0) {
+        list.innerHTML = '<li style="justify-content:center; color: var(--text-secondary); font-size: 0.85rem; padding: 6px;">No active debts.</li>';
+        return;
+    }
+
+    activeDebts.forEach(d => {
+        const li = document.createElement('li');
+        const isOwedByMe = d.type === 'owed_by_me';
+        const colorClass = isOwedByMe ? 'negative' : 'positive';
+        const typeLabel = isOwedByMe ? `You owe ${d.person}` : `${d.person} owes you`;
+        
+        li.innerHTML = `
+            <div class="item-details">
+                <span class="item-name" style="font-size: 0.95rem;">${typeLabel}</span>
+                <span class="item-meta" style="font-size: 0.8rem;">${d.note} (${new Date(d.date).toLocaleDateString()})</span>
+            </div>
+            <div style="display:flex; align-items:center; gap: 8px;">
+                <span class="item-amount ${colorClass}" style="font-size: 0.95rem;">
+                    ${isOwedByMe ? '-' : '+'}${formatMoney(d.amount)}
+                </span>
+                <button class="btn icon-btn" style="padding: 4px; color: var(--success-color);" onclick="settleDebt('${d.id}')" title="Settle"><i class="ri-checkbox-circle-line"></i></button>
+                <button class="btn icon-btn delete" style="padding: 4px;" onclick="deleteDebt('${d.id}')" title="Delete"><i class="ri-delete-bin-line"></i></button>
+            </div>
+        `;
+        list.appendChild(li);
+    });
+}
+
+// Hide remaining budget toggle listener
+document.getElementById('hide-remaining-budget').addEventListener('change', (e) => {
+    state.hideRemainingBudget = e.target.checked;
+    sounds.click();
+    syncState();
+});
 
 // Global click sound
 document.addEventListener('click', (e) => {
