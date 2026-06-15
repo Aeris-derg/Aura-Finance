@@ -501,7 +501,9 @@ function updateUI() {
     }
 
     // Toggle Remaining Budget visibility
-    const hideRemaining = !!state.hideRemainingBudget;
+    // Daily budget always hides it; monthly respects the manual toggle
+    const isDaily = (state.budgetType || 'monthly') === 'daily';
+    const hideRemaining = isDaily || !!state.hideRemainingBudget;
     const remainingCard = document.getElementById('remaining-budget-card');
     const dashboardSection = document.getElementById('dashboard-section');
     const hideCheckbox = document.getElementById('hide-remaining-budget');
@@ -514,6 +516,11 @@ function updateUI() {
             remainingCard.classList.remove('hidden');
             dashboardSection.classList.remove('full-width');
         }
+    }
+    // Only show checkbox for monthly mode; hide it when daily (it's automatic)
+    const checkboxWrapper = hideCheckbox ? hideCheckbox.closest('div') : null;
+    if (checkboxWrapper) {
+        checkboxWrapper.style.display = isDaily ? 'none' : 'flex';
     }
     if (hideCheckbox) {
         hideCheckbox.checked = hideRemaining;
@@ -729,10 +736,13 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
 // Setup Budget Type Label Toggle
 document.getElementById('setup-budget-type').addEventListener('change', (e) => {
     const label = document.getElementById('setup-budget-label');
+    const monthLengthGroup = document.getElementById('setup-month-length-group');
     if (e.target.value === 'daily') {
         label.textContent = "Daily Budget (£)";
+        if (monthLengthGroup) monthLengthGroup.classList.add('hidden');
     } else {
         label.textContent = "Monthly Budget (£)";
+        if (monthLengthGroup) monthLengthGroup.classList.remove('hidden');
     }
 });
 
