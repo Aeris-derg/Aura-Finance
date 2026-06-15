@@ -1141,33 +1141,24 @@ document.getElementById('debt-form').addEventListener('submit', (e) => {
                 db.ref('groups/' + targetGroupId).transaction((groupData) => {
                     if (!groupData) return groupData;
                     
-                    const targetIsDaily = (groupData.budgetType || 'monthly') === 'daily';
                     if (type === 'owed_by_me') {
-                        if (targetIsDaily) {
-                            if (!groupData.purchases) groupData.purchases = [];
-                            groupData.purchases.push({
-                                id: Date.now().toString() + '-target-debt-out',
-                                amount: amount,
-                                category: 'Debt',
-                                comment: `[Debt Lent] to Group: ${currentGroupId}`,
-                                date: viewingDate.toISOString()
-                            });
-                        } else {
-                            groupData.budget = (parseFloat(groupData.budget) || 0) - amount;
-                        }
+                        if (!groupData.purchases) groupData.purchases = [];
+                        groupData.purchases.push({
+                            id: Date.now().toString() + '-target-debt-out',
+                            amount: amount,
+                            category: 'Debt',
+                            comment: `[Debt Lent] to Group: ${currentGroupId}`,
+                            date: viewingDate.toISOString()
+                        });
                     } else if (type === 'owed_to_me') {
-                        if (targetIsDaily) {
-                            if (!groupData.incomes) groupData.incomes = [];
-                            groupData.incomes.push({
-                                id: Date.now().toString() + '-target-debt-in',
-                                amount: amount,
-                                category: 'Debt',
-                                comment: `[Debt Borrowed] from Group: ${currentGroupId}`,
-                                date: viewingDate.toISOString()
-                            });
-                        } else {
-                            groupData.budget = (parseFloat(groupData.budget) || 0) + amount;
-                        }
+                        if (!groupData.incomes) groupData.incomes = [];
+                        groupData.incomes.push({
+                            id: Date.now().toString() + '-target-debt-in',
+                            amount: amount,
+                            category: 'Debt',
+                            comment: `[Debt Borrowed] from Group: ${currentGroupId}`,
+                            date: viewingDate.toISOString()
+                        });
                     }
                     
                     if (!groupData.debts) groupData.debts = [];
@@ -1188,33 +1179,24 @@ document.getElementById('debt-form').addEventListener('submit', (e) => {
                         console.error("Linked transaction failed:", error);
                         alert("Failed to link debt to target group: " + error.message);
                     } else if (committed) {
-                        const currentIsDaily = (state.budgetType || 'monthly') === 'daily';
                         if (type === 'owed_by_me') {
-                            if (currentIsDaily) {
-                                if (!state.incomes) state.incomes = [];
-                                state.incomes.push({
-                                    id: debtId + '-local-debt-in',
-                                    amount: amount,
-                                    category: 'Debt',
-                                    comment: `[Debt Borrowed] from Group: ${targetGroupId}`,
-                                    date: viewingDate.toISOString()
-                                });
-                            } else {
-                                state.budget = (parseFloat(state.budget) || 0) + amount;
-                            }
+                            if (!state.incomes) state.incomes = [];
+                            state.incomes.push({
+                                id: debtId + '-local-debt-in',
+                                amount: amount,
+                                category: 'Debt',
+                                comment: `[Debt Borrowed] from Group: ${targetGroupId}`,
+                                date: viewingDate.toISOString()
+                            });
                         } else if (type === 'owed_to_me') {
-                            if (currentIsDaily) {
-                                if (!state.purchases) state.purchases = [];
-                                state.purchases.push({
-                                    id: debtId + '-local-debt-out',
-                                    amount: amount,
-                                    category: 'Debt',
-                                    comment: `[Debt Lent] to Group: ${targetGroupId}`,
-                                    date: viewingDate.toISOString()
-                                });
-                            } else {
-                                state.budget = (parseFloat(state.budget) || 0) - amount;
-                            }
+                            if (!state.purchases) state.purchases = [];
+                            state.purchases.push({
+                                id: debtId + '-local-debt-out',
+                                amount: amount,
+                                category: 'Debt',
+                                comment: `[Debt Lent] to Group: ${targetGroupId}`,
+                                date: viewingDate.toISOString()
+                            });
                         }
                         
                         if (!state.debts) state.debts = [];
@@ -1275,33 +1257,23 @@ window.settleDebt = (id) => {
             }
             
             if (debt.type === 'owed_by_me') {
-                const targetIsDaily = (groupData.budgetType || 'monthly') === 'daily';
-                if (targetIsDaily) {
-                    if (!groupData.incomes) groupData.incomes = [];
-                    groupData.incomes.push({
-                        id: Date.now().toString() + '-target-settle-in',
-                        amount: debt.amount,
-                        category: 'Debt',
-                        comment: `[Debt Repayment Received] from Group: ${currentGroupId}`,
-                        date: viewingDate.toISOString()
-                    });
-                } else {
-                    groupData.budget = (parseFloat(groupData.budget) || 0) + debt.amount;
-                }
+                if (!groupData.incomes) groupData.incomes = [];
+                groupData.incomes.push({
+                    id: Date.now().toString() + '-target-settle-in',
+                    amount: debt.amount,
+                    category: 'Debt',
+                    comment: `[Debt Repayment Received] from Group: ${currentGroupId}`,
+                    date: viewingDate.toISOString()
+                });
             } else if (debt.type === 'owed_to_me') {
-                const targetIsDaily = (groupData.budgetType || 'monthly') === 'daily';
-                if (targetIsDaily) {
-                    if (!groupData.purchases) groupData.purchases = [];
-                    groupData.purchases.push({
-                        id: Date.now().toString() + '-target-settle-out',
-                        amount: debt.amount,
-                        category: 'Debt',
-                        comment: `[Debt Repaid] to Group: ${currentGroupId}`,
-                        date: viewingDate.toISOString()
-                    });
-                } else {
-                    groupData.budget = (parseFloat(groupData.budget) || 0) - debt.amount;
-                }
+                if (!groupData.purchases) groupData.purchases = [];
+                groupData.purchases.push({
+                    id: Date.now().toString() + '-target-settle-out',
+                    amount: debt.amount,
+                    category: 'Debt',
+                    comment: `[Debt Repaid] to Group: ${currentGroupId}`,
+                    date: viewingDate.toISOString()
+                });
             }
             
             return groupData;
@@ -1310,33 +1282,24 @@ window.settleDebt = (id) => {
                 console.error("Linked settle transaction failed:", error);
                 alert("Failed to settle linked debt on target group: " + error.message);
             } else if (committed) {
-                const currentIsDaily = (state.budgetType || 'monthly') === 'daily';
                 if (debt.type === 'owed_to_me') {
-                    if (currentIsDaily) {
-                        if (!state.incomes) state.incomes = [];
-                        state.incomes.push({
-                            id: Date.now().toString() + '-local-settle-in',
-                            amount: debt.amount,
-                            category: 'Debt',
-                            comment: `[Debt Repayment Received] from Group: ${debt.linkedGroupId}`,
-                            date: viewingDate.toISOString()
-                        });
-                    } else {
-                        state.budget = (parseFloat(state.budget) || 0) + debt.amount;
-                    }
+                    if (!state.incomes) state.incomes = [];
+                    state.incomes.push({
+                        id: Date.now().toString() + '-local-settle-in',
+                        amount: debt.amount,
+                        category: 'Debt',
+                        comment: `[Debt Repayment Received] from Group: ${debt.linkedGroupId}`,
+                        date: viewingDate.toISOString()
+                    });
                 } else if (debt.type === 'owed_by_me') {
-                    if (currentIsDaily) {
-                        if (!state.purchases) state.purchases = [];
-                        state.purchases.push({
-                            id: Date.now().toString() + '-local-settle-out',
-                            amount: debt.amount,
-                            category: 'Debt',
-                            comment: `[Debt Repaid] to Group: ${debt.linkedGroupId}`,
-                            date: viewingDate.toISOString()
-                        });
-                    } else {
-                        state.budget = (parseFloat(state.budget) || 0) - debt.amount;
-                    }
+                    if (!state.purchases) state.purchases = [];
+                    state.purchases.push({
+                        id: Date.now().toString() + '-local-settle-out',
+                        amount: debt.amount,
+                        category: 'Debt',
+                        comment: `[Debt Repaid] to Group: ${debt.linkedGroupId}`,
+                        date: viewingDate.toISOString()
+                    });
                 }
                 
                 debt.status = 'settled';
