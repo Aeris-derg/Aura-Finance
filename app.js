@@ -1151,6 +1151,12 @@ document.getElementById('debt-form').addEventListener('submit', (e) => {
                         } else {
                             groupData.budget = (parseFloat(groupData.budget) || 0) - amount;
                         }
+                    } else if (type === 'owed_to_me') {
+                        if (targetIsDaily) {
+                            groupData.dailyBudget = (parseFloat(groupData.dailyBudget) || 0) + amount;
+                        } else {
+                            groupData.budget = (parseFloat(groupData.budget) || 0) + amount;
+                        }
                     }
                     
                     if (!groupData.debts) groupData.debts = [];
@@ -1171,8 +1177,14 @@ document.getElementById('debt-form').addEventListener('submit', (e) => {
                         console.error("Linked transaction failed:", error);
                         alert("Failed to link debt to target group: " + error.message);
                     } else if (committed) {
-                        if (type === 'owed_to_me') {
-                            const currentIsDaily = (state.budgetType || 'monthly') === 'daily';
+                        const currentIsDaily = (state.budgetType || 'monthly') === 'daily';
+                        if (type === 'owed_by_me') {
+                            if (currentIsDaily) {
+                                state.dailyBudget = (parseFloat(state.dailyBudget) || 0) + amount;
+                            } else {
+                                state.budget = (parseFloat(state.budget) || 0) + amount;
+                            }
+                        } else if (type === 'owed_to_me') {
                             if (currentIsDaily) {
                                 state.dailyBudget = (parseFloat(state.dailyBudget) || 0) - amount;
                             } else {
@@ -1244,6 +1256,13 @@ window.settleDebt = (id) => {
                 } else {
                     groupData.budget = (parseFloat(groupData.budget) || 0) + debt.amount;
                 }
+            } else if (debt.type === 'owed_to_me') {
+                const targetIsDaily = (groupData.budgetType || 'monthly') === 'daily';
+                if (targetIsDaily) {
+                    groupData.dailyBudget = (parseFloat(groupData.dailyBudget) || 0) - debt.amount;
+                } else {
+                    groupData.budget = (parseFloat(groupData.budget) || 0) - debt.amount;
+                }
             }
             
             return groupData;
@@ -1252,12 +1271,18 @@ window.settleDebt = (id) => {
                 console.error("Linked settle transaction failed:", error);
                 alert("Failed to settle linked debt on target group: " + error.message);
             } else if (committed) {
+                const currentIsDaily = (state.budgetType || 'monthly') === 'daily';
                 if (debt.type === 'owed_to_me') {
-                    const currentIsDaily = (state.budgetType || 'monthly') === 'daily';
                     if (currentIsDaily) {
                         state.dailyBudget = (parseFloat(state.dailyBudget) || 0) + debt.amount;
                     } else {
                         state.budget = (parseFloat(state.budget) || 0) + debt.amount;
+                    }
+                } else if (debt.type === 'owed_by_me') {
+                    if (currentIsDaily) {
+                        state.dailyBudget = (parseFloat(state.dailyBudget) || 0) - debt.amount;
+                    } else {
+                        state.budget = (parseFloat(state.budget) || 0) - debt.amount;
                     }
                 }
                 
