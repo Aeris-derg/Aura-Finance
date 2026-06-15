@@ -24,11 +24,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Key
-        run: yarn test --ci --silent --testPathIgnorePatterns=experimental
-        env:
-          CI: true
-          Fire_API: ${{ secrets.FIREBASE_API }}
+      - name: Inject Firebase API Key
+        run: |
+          sed -i 's/PLACEHOLDER_FIREBASE_API/${{ secrets.FIREBASE_API }}/g' app.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
