@@ -32,7 +32,7 @@ const sounds = {
 // FIREBASE CONFIGURATION & SYNC
 // ===============================
 const firebaseConfig = {
-  apiKey: "AIzaSyDGyj5wQm1FJGIMbceeeYykd0U1Ys5IC74",
+  apiKey: ${{secrets.firebase_api}},
   authDomain: "aura-finance-6b6b3.firebaseapp.com",
   projectId: "aura-finance-6b6b3",
   storageBucket: "aura-finance-6b6b3.firebasestorage.app",
