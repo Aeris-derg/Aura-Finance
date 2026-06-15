@@ -1605,6 +1605,9 @@ function checkAndApplySubscriptions() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const limitDate = new Date(Math.max(today.getTime(), calendarViewingDate.getTime()));
+    limitDate.setHours(23, 59, 59, 999);
+
     state.subscriptions.forEach(sub => {
         const createdTime = parseInt(sub.id);
         const createdDate = isNaN(createdTime) ? new Date() : new Date(createdTime);
@@ -1612,7 +1615,7 @@ function checkAndApplySubscriptions() {
 
         let currentPeriodDate = new Date(createdDate);
 
-        // Loop through pay periods starting from when the subscription was created up to today
+        // Loop through pay periods starting from when the subscription was created up to the limit date
         while (true) {
             const bounds = getPayPeriodBounds(currentPeriodDate);
             const start = bounds.startDate;
@@ -1625,8 +1628,8 @@ function checkAndApplySubscriptions() {
                 billDate.setMonth(billDate.getMonth() + 1);
             }
             
-            // Log purchase if the billing day has occurred, is not before creation, and is in the past/today
-            if (billDate.getTime() >= createdDate.getTime() && billDate.getTime() <= today.getTime()) {
+            // Log purchase if the billing day has occurred, is not before creation, and is within the limit date
+            if (billDate.getTime() >= createdDate.getTime() && billDate.getTime() <= limitDate.getTime()) {
                 const alreadyLogged = (state.purchases || []).some(p => {
                     const pDate = new Date(p.date);
                     pDate.setHours(0, 0, 0, 0);
@@ -1649,7 +1652,7 @@ function checkAndApplySubscriptions() {
 
             // Move to the next pay period
             const nextPeriodDate = new Date(end.getTime() + 5 * 24 * 60 * 60 * 1000);
-            if (nextPeriodDate > today && getPayPeriodBounds(nextPeriodDate).startDate > today) {
+            if (nextPeriodDate > limitDate && getPayPeriodBounds(nextPeriodDate).startDate > limitDate) {
                 break;
             }
             currentPeriodDate = nextPeriodDate;
