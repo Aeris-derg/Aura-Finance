@@ -591,3 +591,55 @@ body.dark-theme .app-tab-btn:hover {
 body.dark-theme .sub-summary {
     background: rgba(0, 0, 0, 0.2);
 }
+
+/* Streaks Styles */
+.streak-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+}
+
+body.dark-theme .streak-item {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.streak-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.streak-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.streak-start-date {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.streak-count-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.streak-count {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.streak-flame {
+    animation: flamePulse 1.5s infinite alternate;
+    display: inline-block;
+}
+
+@keyframes flamePulse {
+    0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255, 159, 67, 0.4)); }
+    100% { transform: scale(1.15); filter: drop-shadow(0 0 8px rgba(255, 159, 67, 0.8)); }
+}

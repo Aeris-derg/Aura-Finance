@@ -69,7 +69,13 @@ let state = {
     quickAdds: [],
     groceries: [],
     themeColor: '#b5eadd',
-    isDarkMode: false
+    isDarkMode: false,
+    streakOptOverspending: false,
+    streakStartOverspending: null,
+    streakOptTakeout: false,
+    streakStartTakeout: null,
+    streakOptSaving: false,
+    streakStartSaving: null
 };
 
 // Internal transient state
@@ -516,13 +522,25 @@ function updateUI() {
     const dashboardSection = document.getElementById('dashboard-section');
     const hideCheckbox = document.getElementById('hide-remaining-budget');
     
-    if (remainingCard && dashboardSection) {
-        if (hideRemaining) {
-            remainingCard.classList.add('hidden');
-            dashboardSection.classList.add('full-width');
-        } else {
+    if (remainingCard) {
+        if (!hideRemaining) {
             remainingCard.classList.remove('hidden');
-            dashboardSection.classList.remove('full-width');
+        } else {
+            remainingCard.classList.add('hidden');
+        }
+    }
+
+    const showRemaining = !hideRemaining;
+    const showStreaks = !!(state.streakOptOverspending || state.streakOptTakeout || state.streakOptSaving);
+
+    if (dashboardSection) {
+        dashboardSection.classList.remove('full-width');
+        if (showRemaining && showStreaks) {
+            dashboardSection.style.gridTemplateColumns = '2fr 1.1fr 1.1fr';
+        } else if (showRemaining || showStreaks) {
+            dashboardSection.style.gridTemplateColumns = '2fr 1.2fr';
+        } else {
+            dashboardSection.style.gridTemplateColumns = '1fr';
         }
     }
     // Only show checkbox for monthly mode; hide it when daily (it's automatic)
@@ -534,9 +552,16 @@ function updateUI() {
         hideCheckbox.checked = hideRemaining;
     }
 
+    const optOverspending = document.getElementById('streak-opt-overspending');
+    const optTakeout = document.getElementById('streak-opt-takeout');
+    const optSaving = document.getElementById('streak-opt-saving');
+    if (optOverspending) optOverspending.checked = !!state.streakOptOverspending;
+    if (optTakeout) optTakeout.checked = !!state.streakOptTakeout;
+    if (optSaving) optSaving.checked = !!state.streakOptSaving;
+
     const catSelect = document.getElementById('purchase-category');
     Array.from(catSelect.options).forEach(opt => {
-        if (!['Groceries', 'Transport', 'Entertainment', 'Bills', 'Other', 'custom'].includes(opt.value)) {
+        if (!['Groceries', 'Transport', 'Entertainment', 'Takeout', 'Bills', 'Other', 'custom'].includes(opt.value)) {
             opt.remove();
         }
     });
@@ -555,6 +580,7 @@ function updateUI() {
     renderTopUps();
     renderDebts();
     renderSubscriptions();
+    renderStreaks();
     updateChart();
     updateCalendar();
     switchTab(activeTab);
@@ -837,7 +863,10 @@ document.getElementById('reset-app').addEventListener('click', () => {
         }
         state = {
             budget: 0, payday: 1, customMonthLength: 0, customCategories: [], purchases: [],
-            quickAdds: [], groceries: [], themeColor: '#b5eadd', isDarkMode: false
+            quickAdds: [], groceries: [], themeColor: '#b5eadd', isDarkMode: false,
+            streakOptOverspending: false, streakStartOverspending: null,
+            streakOptTakeout: false, streakStartTakeout: null,
+            streakOptSaving: false, streakStartSaving: null
         };
         viewingDate = new Date();
         calendarViewingDate = new Date();
@@ -1318,6 +1347,46 @@ document.getElementById('hide-remaining-budget').addEventListener('change', (e) 
     syncState();
 });
 
+// Streaks settings toggle listeners
+document.getElementById('streak-opt-overspending').addEventListener('change', (e) => {
+    state.streakOptOverspending = e.target.checked;
+    if (e.target.checked) {
+        if (!state.streakStartOverspending) {
+            state.streakStartOverspending = new Date().toISOString();
+        }
+    } else {
+        state.streakStartOverspending = null;
+    }
+    sounds.click();
+    syncState();
+});
+
+document.getElementById('streak-opt-takeout').addEventListener('change', (e) => {
+    state.streakOptTakeout = e.target.checked;
+    if (e.target.checked) {
+        if (!state.streakStartTakeout) {
+            state.streakStartTakeout = new Date().toISOString();
+        }
+    } else {
+        state.streakStartTakeout = null;
+    }
+    sounds.click();
+    syncState();
+});
+
+document.getElementById('streak-opt-saving').addEventListener('change', (e) => {
+    state.streakOptSaving = e.target.checked;
+    if (e.target.checked) {
+        if (!state.streakStartSaving) {
+            state.streakStartSaving = new Date().toISOString();
+        }
+    } else {
+        state.streakStartSaving = null;
+    }
+    sounds.click();
+    syncState();
+});
+
 // Global click sound
 document.addEventListener('click', (e) => {
     if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('delete') && !e.target.classList.contains('qa-delete')) {
@@ -1500,5 +1569,109 @@ function checkAndApplySubscriptions() {
     
     if (needsSync) {
         syncState();
+    }
+}
+
+function calculateStreakForType(type) {
+    let startStr = null;
+    if (type === 'overspending') startStr = state.streakStartOverspending;
+    else if (type === 'takeout') startStr = state.streakStartTakeout;
+    else if (type === 'saving') startStr = state.streakStartSaving;
+
+    if (!startStr) return 0;
+
+    const startDate = new Date(startStr);
+    startDate.setHours(0,0,0,0);
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    let streak = 0;
+    let target = new Date(today);
+
+    while (target >= startDate) {
+        const dateStr = target.toDateString();
+        const purchasesOnDay = (state.purchases || []).filter(p => {
+            const pDate = new Date(p.date);
+            return pDate.toDateString() === dateStr;
+        });
+        const totalSpentOnDay = purchasesOnDay.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+        const bounds = getPayPeriodBounds(target);
+        const daysInPeriod = getDaysInPayPeriod(bounds.startDate, bounds.endDate);
+        const budgetType = state.budgetType || 'monthly';
+        const baseDailyQuota = budgetType === 'daily'
+            ? (state.dailyBudget || 0)
+            : (state.budget || 0) / daysInPeriod;
+
+        let conditionMet = false;
+        if (type === 'overspending') {
+            conditionMet = baseDailyQuota > 0 && totalSpentOnDay <= baseDailyQuota;
+        } else if (type === 'takeout') {
+            conditionMet = !purchasesOnDay.some(p => 
+                (p.category || '').toLowerCase() === 'takeout' || 
+                (p.comment || '').toLowerCase().includes('takeout')
+            );
+        } else if (type === 'saving') {
+            conditionMet = baseDailyQuota > 0 && totalSpentOnDay < baseDailyQuota;
+        }
+
+        if (conditionMet) {
+            streak++;
+        } else {
+            break;
+        }
+
+        target.setDate(target.getDate() - 1);
+    }
+
+    return streak;
+}
+
+function renderStreaks() {
+    const card = document.getElementById('streaks-card');
+    const container = document.getElementById('streaks-container');
+    if (!card || !container) return;
+
+    const showOverspending = !!state.streakOptOverspending;
+    const showTakeout = !!state.streakOptTakeout;
+    const showSaving = !!state.streakOptSaving;
+
+    if (!showOverspending && !showTakeout && !showSaving) {
+        card.classList.add('hidden');
+        return;
+    }
+
+    card.classList.remove('hidden');
+    container.innerHTML = '';
+
+    const renderItem = (title, streakCount, startDateStr, color) => {
+        const formattedDate = new Date(startDateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        const div = document.createElement('div');
+        div.className = 'streak-item';
+        div.innerHTML = `
+            <div class="streak-info">
+                <span class="streak-name">${title}</span>
+                <span class="streak-start-date">Since ${formattedDate}</span>
+            </div>
+            <div class="streak-count-container">
+                <span class="streak-count" style="color: ${color};">${streakCount} ${streakCount === 1 ? 'day' : 'days'}</span>
+                <i class="ri-fire-fill streak-flame" style="color: #ff9f43; font-size: 1.3rem;"></i>
+            </div>
+        `;
+        container.appendChild(div);
+    };
+
+    if (showOverspending) {
+        const count = calculateStreakForType('overspending');
+        renderItem('No Overspending', count, state.streakStartOverspending, 'var(--success-color)');
+    }
+    if (showTakeout) {
+        const count = calculateStreakForType('takeout');
+        renderItem('No Takeout', count, state.streakStartTakeout, '#38ef7d');
+    }
+    if (showSaving) {
+        const count = calculateStreakForType('saving');
+        renderItem('Surplus / Savings', count, state.streakStartSaving, '#54a0ff');
     }
 }
