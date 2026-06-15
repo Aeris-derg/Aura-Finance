@@ -258,7 +258,14 @@ function calculateQuotaForDate(targetDate) {
     });
     const totalTopUpsToday = todaysTopUps.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
-    const currentQuota = baseDailyQuota + carryover + totalTopUpsToday - spentToday;
+    const todaysIncomes = (state.incomes || []).filter(inc => {
+        const iDate = new Date(inc.date);
+        iDate.setHours(0,0,0,0);
+        return iDate.getTime() === targetStartOfDay.getTime();
+    });
+    const totalIncomeToday = todaysIncomes.reduce((sum, inc) => sum + parseFloat(inc.amount), 0);
+
+    const currentQuota = baseDailyQuota + carryover + totalTopUpsToday + totalIncomeToday - spentToday;
     
     return {
         base: baseDailyQuota,
@@ -979,25 +986,28 @@ document.getElementById('adjust-budget-form').addEventListener('submit', (e) => 
     alert("Base budget updated successfully!");
 });
 
-// Top-up budget form event listener
-document.getElementById('topup-budget-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const amount = parseFloat(document.getElementById('topup-amount').value);
-    const note = document.getElementById('topup-note').value.trim() || 'Budget Top-up';
-    if (!amount || amount <= 0) return;
+// Top-up budget form event listener (conditional since form is removed)
+const topupForm = document.getElementById('topup-budget-form');
+if (topupForm) {
+    topupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const amount = parseFloat(document.getElementById('topup-amount').value);
+        const note = document.getElementById('topup-note').value.trim() || 'Budget Top-up';
+        if (!amount || amount <= 0) return;
 
-    if (!state.budgetTopUps) state.budgetTopUps = [];
-    state.budgetTopUps.push({
-        id: Date.now().toString(),
-        amount,
-        note,
-        date: viewingDate.toISOString()
+        if (!state.budgetTopUps) state.budgetTopUps = [];
+        state.budgetTopUps.push({
+            id: Date.now().toString(),
+            amount,
+            note,
+            date: viewingDate.toISOString()
+        });
+
+        sounds.success();
+        e.target.reset();
+        syncState();
     });
-
-    sounds.success();
-    e.target.reset();
-    syncState();
-});
+}
 
 window.deleteTopUp = (id) => {
     state.budgetTopUps = (state.budgetTopUps || []).filter(t => t.id !== id);
