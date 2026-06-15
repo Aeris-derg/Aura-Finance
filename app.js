@@ -533,19 +533,31 @@ function updateUI() {
         }
     }
 
+    const anyStreakActive = !!state.streakOptOverspending || !!state.streakOptTakeout || !!state.streakOptSaving;
+    
     const dbStreaksCard = document.getElementById('dashboard-streaks-card');
     if (dbStreaksCard) {
-        dbStreaksCard.classList.remove('hidden');
+        if (anyStreakActive) {
+            dbStreaksCard.classList.remove('hidden');
+        } else {
+            dbStreaksCard.classList.add('hidden');
+        }
     }
 
+    const showRightCol = showRemaining || anyStreakActive;
     const dbRightCol = document.getElementById('dashboard-right-col');
     if (dbRightCol) {
-        dbRightCol.style.display = 'flex';
+        dbRightCol.style.display = showRightCol ? 'flex' : 'none';
     }
 
     if (dashboardSection) {
-        dashboardSection.classList.remove('full-width');
-        dashboardSection.style.gridTemplateColumns = '2fr 1.2fr';
+        if (showRightCol) {
+            dashboardSection.classList.remove('full-width');
+            dashboardSection.style.gridTemplateColumns = '2fr 1.2fr';
+        } else {
+            dashboardSection.classList.add('full-width');
+            dashboardSection.style.gridTemplateColumns = '1fr';
+        }
     }
     // Only show checkbox for monthly mode; hide it when daily (it's automatic)
     const checkboxWrapper = hideCheckbox ? hideCheckbox.closest('div') : null;
@@ -1589,25 +1601,32 @@ window.deleteSubscription = (id) => {
 function checkAndApplySubscriptions() {
     if (!state.subscriptions || !currentGroupId) return;
     
-    const bounds = getPayPeriodBounds(new Date());
-    const start = bounds.startDate;
-    const end = bounds.endDate;
-    
     let needsSync = false;
-    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     state.subscriptions.forEach(sub => {
-        let billDate = new Date(start.getFullYear(), start.getMonth(), sub.billingDay);
-        billDate.setHours(0, 0, 0, 0);
-        
-        if (billDate.getTime() < start.getTime()) {
-            billDate.setMonth(billDate.getMonth() + 1);
-        }
-        
-        if (billDate.getTime() >= start.getTime() && billDate.getTime() < end.getTime()) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+        const createdTime = parseInt(sub.id);
+        const createdDate = isNaN(createdTime) ? new Date() : new Date(createdTime);
+        createdDate.setHours(0, 0, 0, 0);
+
+        let currentPeriodDate = new Date(createdDate);
+
+        // Loop through pay periods starting from when the subscription was created up to today
+        while (true) {
+            const bounds = getPayPeriodBounds(currentPeriodDate);
+            const start = bounds.startDate;
+            const end = bounds.endDate;
             
-            if (today.getTime() >= billDate.getTime()) {
+            let billDate = new Date(start.getFullYear(), start.getMonth(), sub.billingDay);
+            billDate.setHours(0, 0, 0, 0);
+            
+            if (billDate.getTime() < start.getTime()) {
+                billDate.setMonth(billDate.getMonth() + 1);
+            }
+            
+            // Log purchase if the billing day has occurred, is not before creation, and is in the past/today
+            if (billDate.getTime() >= createdDate.getTime() && billDate.getTime() <= today.getTime()) {
                 const alreadyLogged = (state.purchases || []).some(p => {
                     const pDate = new Date(p.date);
                     pDate.setHours(0, 0, 0, 0);
@@ -1627,6 +1646,13 @@ function checkAndApplySubscriptions() {
                     needsSync = true;
                 }
             }
+
+            // Move to the next pay period
+            const nextPeriodDate = new Date(end.getTime() + 5 * 24 * 60 * 60 * 1000);
+            if (nextPeriodDate > today && getPayPeriodBounds(nextPeriodDate).startDate > today) {
+                break;
+            }
+            currentPeriodDate = nextPeriodDate;
         }
     });
     
