@@ -25,6 +25,10 @@
                     <label for="login-group-id">Group ID</label>
                     <input type="text" id="login-group-id" required placeholder="e.g. smith-family">
                 </div>
+                <div class="form-group">
+                    <label for="login-password">Group Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
                 <button type="submit" class="btn primary full-width">Sync & Log In</button>
             </form>
 
@@ -33,6 +37,10 @@
                 <div class="form-group">
                     <label for="group-id">Group ID</label>
                     <input type="text" id="group-id" required placeholder="e.g. smith-family">
+                </div>
+                <div class="form-group">
+                    <label for="setup-password">Group Password</label>
+                    <input type="password" id="setup-password" required placeholder="••••••••">
                 </div>
                 <div class="form-group">
                     <label for="setup-budget-type">Budget Type</label>
@@ -130,9 +138,28 @@
                 </section>
             </div>
 
+            <!-- Dashboard Tabs -->
+            <div class="app-tabs-container glass">
+                <button class="app-tab-btn active" data-tab="expenses">
+                    <i class="ri-shopping-cart-2-line"></i> Expenses
+                </button>
+                <button class="app-tab-btn" data-tab="income">
+                    <i class="ri-add-circle-line"></i> Add Income
+                </button>
+                <button class="app-tab-btn" data-tab="budget">
+                    <i class="ri-settings-4-line"></i> Manage Budget
+                </button>
+                <button class="app-tab-btn" data-tab="debts">
+                    <i class="ri-hand-coin-line"></i> Debts Tracker
+                </button>
+                <button class="app-tab-btn" data-tab="subscriptions">
+                    <i class="ri-calendar-todo-line"></i> Subscriptions
+                </button>
+            </div>
+
             <div class="grid-layout">
                 <!-- Log Purchase Section -->
-                <section class="card glass">
+                <section id="card-log-purchase" class="card glass">
                     <h3><i class="ri-shopping-cart-2-line"></i> Log Purchase</h3>
                     <form id="purchase-form">
                         <div class="form-group">
@@ -168,7 +195,7 @@
                 </section>
 
                 <!-- Quick Adds Section -->
-                <section class="card glass">
+                <section id="card-quick-add" class="card glass">
                     <h3><i class="ri-flashlight-line"></i> Quick Add</h3>
                     <p class="section-desc">Create buttons for frequent purchases. Clicking them instantly deducts from your daily quota.</p>
                     <form id="quick-add-form" class="inline-form">
@@ -180,7 +207,7 @@
                 </section>
 
                 <!-- Groceries List Section -->
-                <section class="card glass">
+                <section id="card-groceries" class="card glass">
                     <h3><i class="ri-shopping-basket-line"></i> Needed Groceries</h3>
                     <form id="grocery-form" class="inline-form">
                         <input type="number" id="grocery-qty" value="1" min="1" style="min-width: 0; width: 50px; flex: none;" title="Quantity">
@@ -201,7 +228,7 @@
                 </section>
 
                 <!-- Add Income Section -->
-                <section class="card glass">
+                <section id="card-add-income" class="card glass hidden">
                     <h3><i class="ri-add-circle-line"></i> Add Income</h3>
                     <p class="section-desc">Log any extra money received. It will be added to your remaining budget and shown in the calendar.</p>
                     <form id="income-form">
@@ -213,7 +240,7 @@
                             <label for="income-note">Note</label>
                             <input type="text" id="income-note" placeholder="e.g. Freelance payment, Gift...">
                         </div>
-                        <button type="submit" class="btn primary full-width income-btn">Add Income</button>
+                        <button type="submit" class="btn primary full-width">Add Income</button>
                     </form>
                     <div class="recent-purchases" style="margin-top: 16px;">
                         <h4>Income on this date</h4>
@@ -222,9 +249,9 @@
                 </section>
 
                 <!-- Manage Budget Section -->
-                <section class="card glass">
+                <section id="card-manage-budget" class="card glass hidden">
                     <h3><i class="ri-settings-4-line"></i> Manage Budget</h3>
-                    <p class="section-desc">Change your budget mode or amount, and add budget top-ups for the current period.</p>
+                    <p class="section-desc">Change your budget mode or amount.</p>
                     
                     <form id="adjust-budget-form">
                         <div class="form-group">
@@ -247,7 +274,7 @@
                 </section>
 
                 <!-- Debts Tracker Section -->
-                <section class="card glass">
+                <section id="card-debts-tracker" class="card glass hidden">
                     <h3><i class="ri-hand-coin-line"></i> Debts Tracker</h3>
                     <p class="section-desc">Keep track of who owes you and who you owe. Settle debts to optionally log them in your budget.</p>
                     
@@ -267,12 +294,45 @@
                             <label for="debt-note">Note / Description</label>
                             <input type="text" id="debt-note" placeholder="e.g. Pizza, Rent share...">
                         </div>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <input type="checkbox" id="debt-is-linked" style="width: auto; margin: 0; cursor: pointer;">
+                            <label for="debt-is-linked" style="margin: 0; cursor: pointer; display: inline; font-size: 0.95rem;">Link to Group ID</label>
+                        </div>
+                        <div class="form-group hidden" id="debt-link-group-id-container">
+                            <label for="debt-link-group-id">Target Group ID</label>
+                            <input type="text" id="debt-link-group-id" placeholder="e.g. bob-family">
+                        </div>
                         <button type="submit" class="btn primary full-width">Add Debt</button>
                     </form>
 
                     <div style="margin-top: 20px; border-top: 1px solid var(--glass-border); padding-top: 15px;">
                         <h4>Active Debts</h4>
                         <ul id="debt-list" class="item-list" style="max-height: 180px;"></ul>
+                    </div>
+                </section>
+
+                <!-- Subscriptions Section -->
+                <section id="card-subscriptions" class="card glass hidden">
+                    <h3><i class="ri-calendar-todo-line"></i> Subscriptions</h3>
+                    <p class="section-desc">Manage monthly recurring bills. They will automatically be logged in your budget on their billing day.</p>
+                    <form id="subscription-form">
+                        <div class="form-group">
+                            <label for="sub-name">Subscription Name</label>
+                            <input type="text" id="sub-name" required placeholder="e.g. Netflix, Spotify">
+                        </div>
+                        <div class="inline-form" style="margin-bottom: 10px;">
+                            <input type="number" id="sub-amount" required min="0.01" step="0.01" placeholder="Amount (£)" style="min-width: 0; flex: 2;">
+                            <input type="number" id="sub-day" required min="1" max="31" placeholder="Billing Day (1-31)" style="min-width: 0; flex: 1.5;">
+                        </div>
+                        <button type="submit" class="btn primary full-width">Add Subscription</button>
+                    </form>
+                    <div style="margin-top: 20px; border-top: 1px solid var(--glass-border); padding-top: 15px;">
+                        <h4>Active Subscriptions</h4>
+                        <ul id="subscription-list" class="item-list" style="max-height: 180px;"></ul>
+                        <div class="sub-summary">
+                            <span>Total Monthly Cost:</span>
+                            <strong id="sub-total-cost">£0.00</strong>
+                        </div>
                     </div>
                 </section>
 

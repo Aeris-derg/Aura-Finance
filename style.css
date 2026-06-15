@@ -298,15 +298,7 @@ body.dark-theme .cal-cell.selected { background: rgba(0,0,0,0.6); }
 /* Income Amount Highlight */
 .item-amount.income { color: var(--success-color); }
 
-/* Income Button Override */
-.btn.primary.income-btn {
-    background: linear-gradient(135deg, var(--success-color), #059669);
-    color: white;
-}
-.btn.primary.income-btn:hover {
-    filter: brightness(1.05);
-    box-shadow: 0 4px 14px rgba(16,185,129,0.3);
-}
+
 
 /* Forms & Inputs */
 .form-group {
@@ -373,15 +365,15 @@ select option {
 }
 
 .btn.primary {
-    background: var(--accent-color);
+    background: linear-gradient(135deg, var(--success-color), #059669);
     color: #fff;
     text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .btn.primary:hover {
-    filter: brightness(0.95);
+    filter: brightness(1.05);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 14px rgba(16,185,129,0.3);
 }
 
 .btn.full-width { width: 100%; }
@@ -542,4 +534,60 @@ body.dark-theme .checkable-list li:hover { background: rgba(0,0,0,0.5); }
 
 .item-amount.negative {
     color: var(--danger-color);
+}
+
+/* Dashboard Tabs Navigation */
+.app-tabs-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 20px 0;
+    padding: 10px;
+    border-radius: 12px;
+}
+
+.app-tab-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.app-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+body.dark-theme .app-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.app-tab-btn.active {
+    background: linear-gradient(135deg, var(--success-color), #059669) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+/* Subscriptions Styles */
+.sub-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-top: 15px;
+    border: 1px dashed var(--glass-border);
+}
+
+body.dark-theme .sub-summary {
+    background: rgba(0, 0, 0, 0.2);
 }

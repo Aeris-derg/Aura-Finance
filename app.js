@@ -78,6 +78,7 @@ let calendarViewingDate = new Date();
 let pieChartInstance = null;
 let currentGroupId = localStorage.getItem('aura_group_id') || null;
 let dbRef = null;
+let activeTab = 'expenses';
 
 function syncState() {
     if (dbRef) {
@@ -546,14 +547,17 @@ function updateUI() {
         catSelect.insertBefore(option, catSelect.lastElementChild);
     });
 
+    checkAndApplySubscriptions();
     renderPurchases();
     renderQuickAdds();
     renderGroceries();
     renderIncomes();
     renderTopUps();
     renderDebts();
+    renderSubscriptions();
     updateChart();
     updateCalendar();
+    switchTab(activeTab);
 }
 
 function renderPurchases() {
@@ -719,6 +723,7 @@ document.getElementById('tab-create').addEventListener('click', () => {
 document.getElementById('login-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const gId = document.getElementById('login-group-id').value.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
+    const password = document.getElementById('login-password').value;
     if (!gId) {
         alert("Please enter a valid Group ID.");
         return;
@@ -727,11 +732,16 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
     db.ref('groups/' + gId).once('value')
         .then((snapshot) => {
             const val = snapshot.val();
-            if (val && val.budget > 0) {
+            if (val) {
+                if (val.password && val.password !== password) {
+                    alert("Incorrect Group Password.");
+                    sounds.error();
+                    return;
+                }
                 sounds.success();
                 joinGroup(gId);
             } else {
-                alert(`Group "${gId}" was not found or is empty. Please check the ID or create a new group under the "New Group" tab.`);
+                alert(`Group "${gId}" was not found. Please check the ID or create a new group under the "New Group" tab.`);
             }
         })
         .catch((error) => {
@@ -761,6 +771,7 @@ document.getElementById('setup-form').addEventListener('submit', (e) => {
         alert("Please enter a valid Group ID (letters, numbers, dashes, and underscores only).");
         return;
     }
+    const setupPassword = document.getElementById('setup-password').value;
     const budgetType = document.getElementById('setup-budget-type').value;
     const budgetAmount = parseFloat(document.getElementById('setup-budget-amount').value);
     const payday = parseInt(document.getElementById('payday').value);
@@ -770,10 +781,15 @@ document.getElementById('setup-form').addEventListener('submit', (e) => {
     db.ref('groups/' + gId).once('value')
         .then((snapshot) => {
             const existingData = snapshot.val();
-            if (existingData && (existingData.budget > 0 || existingData.dailyBudget > 0)) {
-                const acceptExisting = confirm(`The group "${gId}" already exists! Do you want to join it and download its current settings? If you click Cancel, you will overwrite the group with your new settings.`);
+            if (existingData) {
+                const enteredPass = prompt("The group already exists. Enter the password to proceed:");
+                if (existingData.password && existingData.password !== enteredPass) {
+                    alert("Incorrect Password. Overwrite/Join aborted.");
+                    sounds.error();
+                    return;
+                }
+                const acceptExisting = confirm("Password correct! Do you want to join this existing group? If you click Cancel, you will OVERWRITE it with your new settings.");
                 if (acceptExisting) {
-                    // Join existing
                     sounds.success();
                     joinGroup(gId);
                     return;
@@ -783,16 +799,19 @@ document.getElementById('setup-form').addEventListener('submit', (e) => {
             // Create new or overwrite existing
             sounds.success();
             const initialData = {
+                password: setupPassword,
                 budget: budgetType === 'monthly' ? budgetAmount : 0,
                 dailyBudget: budgetType === 'daily' ? budgetAmount : 0,
                 budgetType,
                 budgetTopUps: [],
                 debts: [],
+                subscriptions: [],
                 hideRemainingBudget: false,
                 payday,
                 customMonthLength,
                 customCategories: [],
                 purchases: [],
+                incomes: [],
                 quickAdds: [],
                 groceries: [],
                 themeColor: '#b5eadd',
@@ -802,7 +821,7 @@ document.getElementById('setup-form').addEventListener('submit', (e) => {
         })
         .catch((error) => {
             console.error("Firebase database once() error:", error);
-            alert("Database Connection Failed.\n\nDetails: " + error.message + "\n\n1. Ensure you have created your Realtime Database in the console.\n2. Ensure your rules allow Read & Write access (e.g., set to true during test mode).");
+            alert("Database Connection Failed.\n\nDetails: " + error.message);
         });
 });
 
@@ -1047,6 +1066,19 @@ function renderTopUps() {
     });
 }
 
+// Toggle link to group container in debt form
+document.getElementById('debt-is-linked').addEventListener('change', (e) => {
+    const container = document.getElementById('debt-link-group-id-container');
+    const input = document.getElementById('debt-link-group-id');
+    if (e.target.checked) {
+        container.classList.remove('hidden');
+        input.required = true;
+    } else {
+        container.classList.add('hidden');
+        input.required = false;
+    }
+});
+
 // Debt Form event listener
 document.getElementById('debt-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -1054,59 +1086,189 @@ document.getElementById('debt-form').addEventListener('submit', (e) => {
     const person = document.getElementById('debt-person').value.trim();
     const amount = parseFloat(document.getElementById('debt-amount').value);
     const note = document.getElementById('debt-note').value.trim() || 'Debt';
+    const isLinked = document.getElementById('debt-is-linked').checked;
+    const targetGroupId = document.getElementById('debt-link-group-id').value.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
 
     if (!person || !amount || amount <= 0) return;
 
-    if (!state.debts) state.debts = [];
-    state.debts.push({
-        id: Date.now().toString(),
-        type,
-        person,
-        amount,
-        note,
-        status: 'outstanding',
-        date: viewingDate.toISOString()
-    });
+    if (isLinked) {
+        if (!targetGroupId) {
+            alert("Please enter a valid Target Group ID.");
+            return;
+        }
+        if (targetGroupId === currentGroupId) {
+            alert("You cannot link a debt to your own Group ID.");
+            return;
+        }
+        
+        db.ref('groups/' + targetGroupId).once('value')
+            .then((snapshot) => {
+                const targetData = snapshot.val();
+                if (!targetData) {
+                    alert(`Target Group ID "${targetGroupId}" does not exist in the database.`);
+                    sounds.error();
+                    return;
+                }
+                
+                const debtId = Date.now().toString();
+                
+                db.ref('groups/' + targetGroupId).transaction((groupData) => {
+                    if (!groupData) return groupData;
+                    
+                    const targetIsDaily = (groupData.budgetType || 'monthly') === 'daily';
+                    if (type === 'owed_by_me') {
+                        if (targetIsDaily) {
+                            groupData.dailyBudget = (parseFloat(groupData.dailyBudget) || 0) - amount;
+                        } else {
+                            groupData.budget = (parseFloat(groupData.budget) || 0) - amount;
+                        }
+                    }
+                    
+                    if (!groupData.debts) groupData.debts = [];
+                    groupData.debts.push({
+                        id: debtId,
+                        type: type === 'owed_by_me' ? 'owed_to_me' : 'owed_by_me',
+                        person: currentGroupId,
+                        amount: amount,
+                        note: `Linked Debt: ${note}`,
+                        linkedGroupId: currentGroupId,
+                        status: 'outstanding',
+                        date: viewingDate.toISOString()
+                    });
+                    
+                    return groupData;
+                }, (error, committed) => {
+                    if (error) {
+                        console.error("Linked transaction failed:", error);
+                        alert("Failed to link debt to target group: " + error.message);
+                    } else if (committed) {
+                        if (type === 'owed_to_me') {
+                            const currentIsDaily = (state.budgetType || 'monthly') === 'daily';
+                            if (currentIsDaily) {
+                                state.dailyBudget = (parseFloat(state.dailyBudget) || 0) - amount;
+                            } else {
+                                state.budget = (parseFloat(state.budget) || 0) - amount;
+                            }
+                        }
+                        
+                        if (!state.debts) state.debts = [];
+                        state.debts.push({
+                            id: debtId,
+                            type,
+                            person: `${person} (Group: ${targetGroupId})`,
+                            amount,
+                            note,
+                            linkedGroupId: targetGroupId,
+                            status: 'outstanding',
+                            date: viewingDate.toISOString()
+                        });
+                        
+                        sounds.success();
+                        e.target.reset();
+                        document.getElementById('debt-link-group-id-container').classList.add('hidden');
+                        document.getElementById('debt-link-group-id').required = false;
+                        syncState();
+                    }
+                });
+            })
+            .catch(err => {
+                console.error("Checking target group failed:", err);
+                alert("Database Connection Failed: " + err.message);
+            });
+    } else {
+        if (!state.debts) state.debts = [];
+        state.debts.push({
+            id: Date.now().toString(),
+            type,
+            person,
+            amount,
+            note,
+            status: 'outstanding',
+            date: viewingDate.toISOString()
+        });
 
-    sounds.success();
-    e.target.reset();
-    syncState();
+        sounds.success();
+        e.target.reset();
+        syncState();
+    }
 });
 
 window.settleDebt = (id) => {
     const debt = (state.debts || []).find(d => d.id === id);
     if (!debt) return;
 
-    let logToBudget = false;
-    if (debt.type === 'owed_by_me') {
-        logToBudget = confirm(`Do you want to log settling this debt of ${formatMoney(debt.amount)} to ${debt.person} as an Expense (Purchase) in your budget?`);
+    if (debt.linkedGroupId) {
+        db.ref('groups/' + debt.linkedGroupId).transaction((groupData) => {
+            if (!groupData) return groupData;
+            
+            if (groupData.debts) {
+                const targetDebt = groupData.debts.find(d => d.id === id);
+                if (targetDebt) {
+                    targetDebt.status = 'settled';
+                }
+            }
+            
+            if (debt.type === 'owed_by_me') {
+                const targetIsDaily = (groupData.budgetType || 'monthly') === 'daily';
+                if (targetIsDaily) {
+                    groupData.dailyBudget = (parseFloat(groupData.dailyBudget) || 0) + debt.amount;
+                } else {
+                    groupData.budget = (parseFloat(groupData.budget) || 0) + debt.amount;
+                }
+            }
+            
+            return groupData;
+        }, (error, committed) => {
+            if (error) {
+                console.error("Linked settle transaction failed:", error);
+                alert("Failed to settle linked debt on target group: " + error.message);
+            } else if (committed) {
+                if (debt.type === 'owed_to_me') {
+                    const currentIsDaily = (state.budgetType || 'monthly') === 'daily';
+                    if (currentIsDaily) {
+                        state.dailyBudget = (parseFloat(state.dailyBudget) || 0) + debt.amount;
+                    } else {
+                        state.budget = (parseFloat(state.budget) || 0) + debt.amount;
+                    }
+                }
+                
+                debt.status = 'settled';
+                sounds.success();
+                syncState();
+            }
+        });
     } else {
-        logToBudget = confirm(`Do you want to log receiving ${formatMoney(debt.amount)} from ${debt.person} as Income in your budget?`);
-    }
-
-    if (logToBudget) {
+        let logToBudget = false;
         if (debt.type === 'owed_by_me') {
-            state.purchases.push({
-                id: Date.now().toString(),
-                amount: debt.amount,
-                category: 'Bills',
-                comment: `Settle debt to ${debt.person}: ${debt.note}`,
-                date: viewingDate.toISOString()
-            });
+            logToBudget = confirm(`Do you want to log settling this debt of ${formatMoney(debt.amount)} to ${debt.person} as an Expense (Purchase) in your budget?`);
         } else {
-            if (!state.incomes) state.incomes = [];
-            state.incomes.push({
-                id: Date.now().toString(),
-                amount: debt.amount,
-                note: `Settle loan to ${debt.person}: ${debt.note}`,
-                date: viewingDate.toISOString()
-            });
+            logToBudget = confirm(`Do you want to log receiving ${formatMoney(debt.amount)} from ${debt.person} as Income in your budget?`);
         }
-    }
 
-    debt.status = 'settled';
-    sounds.success();
-    syncState();
+        if (logToBudget) {
+            if (debt.type === 'owed_by_me') {
+                state.purchases.push({
+                    id: Date.now().toString(),
+                    amount: debt.amount,
+                    category: 'Bills',
+                    comment: `Settle debt to ${debt.person}: ${debt.note}`,
+                    date: viewingDate.toISOString()
+                });
+            } else {
+                if (!state.incomes) state.incomes = [];
+                state.incomes.push({
+                    id: Date.now().toString(),
+                    amount: debt.amount,
+                    note: `Settle loan to ${debt.person}: ${debt.note}`,
+                    date: viewingDate.toISOString()
+                });
+            }
+        }
+
+        debt.status = 'settled';
+        sounds.success();
+        syncState();
+    }
 };
 
 window.deleteDebt = (id) => {
@@ -1162,3 +1324,181 @@ document.addEventListener('click', (e) => {
         if(e.target.type !== 'submit') sounds.click();
     }
 });
+
+function switchTab(tabName) {
+    activeTab = tabName;
+    
+    // Update active tab button classes
+    document.querySelectorAll('.app-tab-btn').forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabName) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // Hide all main cards
+    const cardIds = [
+        'card-log-purchase',
+        'card-quick-add',
+        'card-groceries',
+        'card-add-income',
+        'card-manage-budget',
+        'card-debts-tracker',
+        'card-subscriptions'
+    ];
+    cardIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+
+    // Display appropriate card(s)
+    const gridLayout = document.querySelector('.grid-layout');
+    if (!gridLayout) return;
+
+    if (tabName === 'expenses') {
+        gridLayout.style.display = 'grid';
+        ['card-log-purchase', 'card-quick-add', 'card-groceries'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('hidden');
+        });
+    } else {
+        gridLayout.style.display = 'block';
+        let targetId = '';
+        if (tabName === 'income') targetId = 'card-add-income';
+        else if (tabName === 'budget') targetId = 'card-manage-budget';
+        else if (tabName === 'debts') targetId = 'card-debts-tracker';
+        else if (tabName === 'subscriptions') targetId = 'card-subscriptions';
+
+        if (targetId) {
+            const el = document.getElementById(targetId);
+            if (el) {
+                el.classList.remove('hidden');
+                el.style.maxWidth = '600px';
+                el.style.margin = '0 auto';
+            }
+        }
+    }
+}
+
+// Attach app tab button listeners
+document.querySelectorAll('.app-tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const tab = e.currentTarget.getAttribute('data-tab');
+        switchTab(tab);
+    });
+});
+
+// Subscription Form listener
+document.getElementById('subscription-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('sub-name').value.trim();
+    const amount = parseFloat(document.getElementById('sub-amount').value);
+    const day = parseInt(document.getElementById('sub-day').value);
+    
+    if (!name || !amount || amount <= 0 || !day || day < 1 || day > 31) return;
+    
+    if (!state.subscriptions) state.subscriptions = [];
+    
+    state.subscriptions.push({
+        id: Date.now().toString(),
+        name,
+        amount,
+        billingDay: day
+    });
+    
+    sounds.success();
+    e.target.reset();
+    
+    checkAndApplySubscriptions();
+    syncState();
+});
+
+function renderSubscriptions() {
+    const list = document.getElementById('subscription-list');
+    if (!list) return;
+    list.innerHTML = '';
+    
+    const subs = state.subscriptions || [];
+    const totalCostEl = document.getElementById('sub-total-cost');
+    
+    if (subs.length === 0) {
+        list.innerHTML = '<li style="justify-content:center; color: var(--text-secondary); font-size: 0.85rem; padding: 6px;">No active subscriptions.</li>';
+        if (totalCostEl) totalCostEl.textContent = formatMoney(0);
+        return;
+    }
+    
+    let totalCost = 0;
+    subs.forEach(s => {
+        totalCost += parseFloat(s.amount) || 0;
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <div class="item-details">
+                <span class="item-name" style="font-size: 0.95rem;">${s.name}</span>
+                <span class="item-meta" style="font-size: 0.8rem;">Billed on day ${s.billingDay} of month</span>
+            </div>
+            <div style="display:flex; align-items:center; gap: 8px;">
+                <span class="item-amount negative" style="font-size: 0.95rem;">-${formatMoney(s.amount)}</span>
+                <button class="btn icon-btn delete" style="padding: 4px;" onclick="deleteSubscription('${s.id}')" title="Delete"><i class="ri-delete-bin-line"></i></button>
+            </div>
+        `;
+        list.appendChild(li);
+    });
+    
+    if (totalCostEl) totalCostEl.textContent = formatMoney(totalCost);
+}
+
+window.deleteSubscription = (id) => {
+    state.subscriptions = (state.subscriptions || []).filter(s => s.id !== id);
+    sounds.delete();
+    syncState();
+};
+
+function checkAndApplySubscriptions() {
+    if (!state.subscriptions || !currentGroupId) return;
+    
+    const bounds = getPayPeriodBounds(new Date());
+    const start = bounds.startDate;
+    const end = bounds.endDate;
+    
+    let needsSync = false;
+    
+    state.subscriptions.forEach(sub => {
+        let billDate = new Date(start.getFullYear(), start.getMonth(), sub.billingDay);
+        billDate.setHours(0, 0, 0, 0);
+        
+        if (billDate.getTime() < start.getTime()) {
+            billDate.setMonth(billDate.getMonth() + 1);
+        }
+        
+        if (billDate.getTime() >= start.getTime() && billDate.getTime() < end.getTime()) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (today.getTime() >= billDate.getTime()) {
+                const alreadyLogged = (state.purchases || []).some(p => {
+                    const pDate = new Date(p.date);
+                    pDate.setHours(0, 0, 0, 0);
+                    return p.subscriptionId === sub.id && pDate.getTime() === billDate.getTime();
+                });
+                
+                if (!alreadyLogged) {
+                    if (!state.purchases) state.purchases = [];
+                    state.purchases.push({
+                        id: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9),
+                        amount: parseFloat(sub.amount),
+                        category: 'Bills',
+                        comment: `[Subscription] ${sub.name}`,
+                        date: billDate.toISOString(),
+                        subscriptionId: sub.id
+                    });
+                    needsSync = true;
+                }
+            }
+        }
+    });
+    
+    if (needsSync) {
+        syncState();
+    }
+}
