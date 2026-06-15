@@ -517,28 +517,35 @@ function updateUI() {
     // Toggle Remaining Budget visibility
     // Daily budget always hides it; monthly respects the manual toggle
     const isDaily = (state.budgetType || 'monthly') === 'daily';
+
     const hideRemaining = isDaily || !!state.hideRemainingBudget;
     const remainingCard = document.getElementById('remaining-budget-card');
     const dashboardSection = document.getElementById('dashboard-section');
     const hideCheckbox = document.getElementById('hide-remaining-budget');
     
+    const showRemaining = !hideRemaining;
+
     if (remainingCard) {
-        if (!hideRemaining) {
+        if (showRemaining) {
             remainingCard.classList.remove('hidden');
         } else {
             remainingCard.classList.add('hidden');
         }
     }
 
-    const showRemaining = !hideRemaining;
+    const dbStreaksCard = document.getElementById('dashboard-streaks-card');
+    if (dbStreaksCard) {
+        dbStreaksCard.classList.remove('hidden');
+    }
+
+    const dbRightCol = document.getElementById('dashboard-right-col');
+    if (dbRightCol) {
+        dbRightCol.style.display = 'flex';
+    }
 
     if (dashboardSection) {
         dashboardSection.classList.remove('full-width');
-        if (showRemaining) {
-            dashboardSection.style.gridTemplateColumns = '2fr 1.2fr';
-        } else {
-            dashboardSection.style.gridTemplateColumns = '1fr';
-        }
+        dashboardSection.style.gridTemplateColumns = '2fr 1.2fr';
     }
     // Only show checkbox for monthly mode; hide it when daily (it's automatic)
     const checkboxWrapper = hideCheckbox ? hideCheckbox.closest('div') : null;
@@ -1460,12 +1467,18 @@ function switchTab(tabName) {
     ];
     cardIds.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
+        if (el) {
+            el.classList.add('hidden');
+            el.style.maxWidth = '';
+            el.style.margin = '';
+        }
     });
 
     // Display appropriate card(s)
     const gridLayout = document.querySelector('.grid-layout');
     if (!gridLayout) return;
+
+    const isDaily = (state.budgetType || 'monthly') === 'daily';
 
     if (tabName === 'expenses') {
         gridLayout.classList.remove('two-cols');
@@ -1479,11 +1492,7 @@ function switchTab(tabName) {
         gridLayout.style.display = 'grid';
         ['card-streaks', 'card-manage-budget'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) {
-                el.classList.remove('hidden');
-                el.style.maxWidth = '';
-                el.style.margin = '';
-            }
+            if (el) el.classList.remove('hidden');
         });
     } else {
         gridLayout.classList.remove('two-cols');
@@ -1637,11 +1646,13 @@ function calculateStreakForType(type) {
     const startDate = new Date(startStr);
     startDate.setHours(0,0,0,0);
 
-    const today = new Date();
-    today.setHours(0,0,0,0);
+    const startFromDate = new Date(viewingDate || new Date());
+    startFromDate.setHours(0,0,0,0);
+
+    if (startFromDate < startDate) return 0;
 
     let streak = 0;
-    let target = new Date(today);
+    let target = new Date(startFromDate);
 
     while (target >= startDate) {
         const dateStr = target.toDateString();
@@ -1649,25 +1660,19 @@ function calculateStreakForType(type) {
             const pDate = new Date(p.date);
             return pDate.toDateString() === dateStr;
         });
-        const totalSpentOnDay = purchasesOnDay.reduce((sum, p) => sum + parseFloat(p.amount), 0);
 
-        const bounds = getPayPeriodBounds(target);
-        const daysInPeriod = getDaysInPayPeriod(bounds.startDate, bounds.endDate);
-        const budgetType = state.budgetType || 'monthly';
-        const baseDailyQuota = budgetType === 'daily'
-            ? (state.dailyBudget || 0)
-            : (state.budget || 0) / daysInPeriod;
+        const { base, quota } = calculateQuotaForDate(target);
 
         let conditionMet = false;
         if (type === 'overspending') {
-            conditionMet = baseDailyQuota > 0 && totalSpentOnDay <= baseDailyQuota;
+            conditionMet = base > 0 && quota >= 0;
         } else if (type === 'takeout') {
             conditionMet = !purchasesOnDay.some(p => 
                 (p.category || '').toLowerCase() === 'takeout' || 
                 (p.comment || '').toLowerCase().includes('takeout')
             );
         } else if (type === 'saving') {
-            conditionMet = baseDailyQuota > 0 && totalSpentOnDay < baseDailyQuota;
+            conditionMet = base > 0 && quota > 0;
         }
 
         if (conditionMet) {
@@ -1683,51 +1688,55 @@ function calculateStreakForType(type) {
 }
 
 function renderStreaks() {
-    const card = document.getElementById('card-streaks');
-    const container = document.getElementById('streaks-container');
-    if (!card || !container) return;
-
     const showOverspending = !!state.streakOptOverspending;
     const showTakeout = !!state.streakOptTakeout;
     const showSaving = !!state.streakOptSaving;
-    const activeTitle = document.getElementById('active-streaks-title');
 
-    if (!showOverspending && !showTakeout && !showSaving) {
-        if (activeTitle) activeTitle.style.display = 'none';
-        container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 0.95rem; margin-top: 10px;">No streaks enabled. Check options above to begin tracking.</div>';
-        return;
-    }
+    const buildHTML = (containerId, activeTitleId) => {
+        const container = document.getElementById(containerId);
+        const activeTitle = document.getElementById(activeTitleId);
+        if (!container) return;
 
-    if (activeTitle) activeTitle.style.display = 'flex';
-    container.innerHTML = '';
+        if (!showOverspending && !showTakeout && !showSaving) {
+            if (activeTitle) activeTitle.style.display = 'none';
+            container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 0.95rem; margin-top: 10px;">No streaks enabled. Check options above to begin tracking.</div>';
+            return;
+        }
 
-    const renderItem = (title, streakCount, startDateStr, color) => {
-        const formattedDate = new Date(startDateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-        const div = document.createElement('div');
-        div.className = 'streak-item';
-        div.innerHTML = `
-            <div class="streak-info">
-                <span class="streak-name">${title}</span>
-                <span class="streak-start-date">Since ${formattedDate}</span>
-            </div>
-            <div class="streak-count-container">
-                <span class="streak-count" style="color: ${color};">${streakCount} ${streakCount === 1 ? 'day' : 'days'}</span>
-                <i class="ri-fire-fill streak-flame" style="color: #ff9f43; font-size: 1.3rem;"></i>
-            </div>
-        `;
-        container.appendChild(div);
+        if (activeTitle) activeTitle.style.display = 'flex';
+        container.innerHTML = '';
+
+        const renderItem = (title, streakCount, startDateStr, color) => {
+            const formattedDate = new Date(startDateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            const div = document.createElement('div');
+            div.className = 'streak-item';
+            div.innerHTML = `
+                <div class="streak-info">
+                    <span class="streak-name">${title}</span>
+                    <span class="streak-start-date">Since ${formattedDate}</span>
+                </div>
+                <div class="streak-count-container">
+                    <span class="streak-count" style="color: ${color};">${streakCount} ${streakCount === 1 ? 'day' : 'days'}</span>
+                    <i class="ri-fire-fill streak-flame" style="color: #ff9f43; font-size: 1.3rem;"></i>
+                </div>
+            `;
+            container.appendChild(div);
+        };
+
+        if (showOverspending) {
+            const count = calculateStreakForType('overspending');
+            renderItem('No Overspending', count, state.streakStartOverspending, 'var(--success-color)');
+        }
+        if (showTakeout) {
+            const count = calculateStreakForType('takeout');
+            renderItem('No Takeout', count, state.streakStartTakeout, '#38ef7d');
+        }
+        if (showSaving) {
+            const count = calculateStreakForType('saving');
+            renderItem('Surplus / Savings', count, state.streakStartSaving, '#54a0ff');
+        }
     };
 
-    if (showOverspending) {
-        const count = calculateStreakForType('overspending');
-        renderItem('No Overspending', count, state.streakStartOverspending, 'var(--success-color)');
-    }
-    if (showTakeout) {
-        const count = calculateStreakForType('takeout');
-        renderItem('No Takeout', count, state.streakStartTakeout, '#38ef7d');
-    }
-    if (showSaving) {
-        const count = calculateStreakForType('saving');
-        renderItem('Surplus / Savings', count, state.streakStartSaving, '#54a0ff');
-    }
+    buildHTML('streaks-container', 'active-streaks-title');
+    buildHTML('dashboard-streaks-container', 'dashboard-active-streaks-title');
 }
