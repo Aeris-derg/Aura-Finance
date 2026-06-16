@@ -11,7 +11,7 @@ export function renderIncomes(): void {
     list.innerHTML = '';
     const viewStr = context.viewingDate.toDateString();
     const viewedIncomes = (state.incomes || [])
-        .filter(inc => new Date(inc.date).toDateString() === viewStr && !inc.note.startsWith('Savings Withdrawal'))
+        .filter(inc => new Date(inc.date).toDateString() === viewStr && !(inc.note || '').startsWith('Savings Withdrawal'))
         .reverse();
 
     if (viewedIncomes.length === 0) {

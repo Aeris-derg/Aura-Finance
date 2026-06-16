@@ -127,12 +127,12 @@ export function calculateQuotaForDate(targetDate: Date): { base: number; quota: 
     while (currentIter < targetStartOfDay) {
         const dStr = currentIter.toDateString();
         
-        const dayPurchases = (groupedPurchases!.get(dStr) || []).filter(p => !(p.category === 'Savings' && p.comment.startsWith('Savings Spend:')));
+        const dayPurchases = (groupedPurchases!.get(dStr) || []).filter(p => !(p.category === 'Savings' && (p.comment || '').startsWith('Savings Spend:')));
         for (let i = 0; i < dayPurchases.length; i++) {
             totalSpentPast += parseFloat(dayPurchases[i].amount.toString());
         }
 
-        const dayIncomes = (groupedIncomes!.get(dStr) || []).filter(inc => !inc.note.startsWith('Savings Withdrawal'));
+        const dayIncomes = (groupedIncomes!.get(dStr) || []).filter(inc => !(inc.note || '').startsWith('Savings Withdrawal'));
         for (let i = 0; i < dayIncomes.length; i++) {
             totalIncomePast += parseFloat(dayIncomes[i].amount.toString());
         }
@@ -153,13 +153,13 @@ export function calculateQuotaForDate(targetDate: Date): { base: number; quota: 
 
     const targetDStr = targetStartOfDay.toDateString();
     
-    const todaysPurchases = (groupedPurchases!.get(targetDStr) || []).filter(p => !(p.category === 'Savings' && p.comment.startsWith('Savings Spend:')));
+    const todaysPurchases = (groupedPurchases!.get(targetDStr) || []).filter(p => !(p.category === 'Savings' && (p.comment || '').startsWith('Savings Spend:')));
     const spentToday = todaysPurchases.reduce((sum, p) => sum + parseFloat(p.amount.toString()), 0);
 
     const todaysTopUps = groupedTopUps!.get(targetDStr) || [];
     const totalTopUpsToday = todaysTopUps.reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
 
-    const todaysIncomes = (groupedIncomes!.get(targetDStr) || []).filter(inc => !inc.note.startsWith('Savings Withdrawal'));
+    const todaysIncomes = (groupedIncomes!.get(targetDStr) || []).filter(inc => !(inc.note || '').startsWith('Savings Withdrawal'));
     const totalIncomeToday = todaysIncomes.reduce((sum, inc) => sum + parseFloat(inc.amount.toString()), 0);
 
     const currentQuota = baseDailyQuota + carryover + totalTopUpsToday + totalIncomeToday - spentToday;
@@ -187,12 +187,12 @@ export function getRemainingBudgetForPeriod(targetDate: Date): number {
     while (currentIter < endOfPeriod) {
         const dStr = currentIter.toDateString();
         
-        const dayPurchases = (groupedPurchases!.get(dStr) || []).filter(p => !(p.category === 'Savings' && p.comment.startsWith('Savings Spend:')));
+        const dayPurchases = (groupedPurchases!.get(dStr) || []).filter(p => !(p.category === 'Savings' && (p.comment || '').startsWith('Savings Spend:')));
         for (let i = 0; i < dayPurchases.length; i++) {
             totalSpent += parseFloat(dayPurchases[i].amount.toString());
         }
 
-        const dayIncomes = (groupedIncomes!.get(dStr) || []).filter(inc => !inc.note.startsWith('Savings Withdrawal'));
+        const dayIncomes = (groupedIncomes!.get(dStr) || []).filter(inc => !(inc.note || '').startsWith('Savings Withdrawal'));
         for (let i = 0; i < dayIncomes.length; i++) {
             totalIncome += parseFloat(dayIncomes[i].amount.toString());
         }
