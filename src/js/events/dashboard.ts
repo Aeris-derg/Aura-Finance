@@ -60,6 +60,38 @@ export function initDashboardEvents(): void {
         });
     }
 
+    // Hide Daily Quota Toggle Listener
+    const hideDailyQuota = dom.get<HTMLInputElement>('hide-daily-quota');
+    if (hideDailyQuota) {
+        hideDailyQuota.addEventListener('change', (e) => {
+            const target = e.target as HTMLInputElement;
+            state.hideDailyQuota = target.checked;
+            sounds.click();
+            syncState();
+        });
+    }
+
+    // Show Current Money Toggle Listener
+    const showCurrentMoney = dom.get<HTMLInputElement>('show-current-money');
+    if (showCurrentMoney) {
+        showCurrentMoney.addEventListener('change', (e) => {
+            const target = e.target as HTMLInputElement;
+            state.showCurrentMoney = target.checked;
+            sounds.click();
+            syncState();
+        });
+    }
+
+    // Current Money Input Listener
+    const currentMoneyInput = dom.get<HTMLInputElement>('current-money-input');
+    if (currentMoneyInput) {
+        currentMoneyInput.addEventListener('change', (e) => {
+            const target = e.target as HTMLInputElement;
+            state.currentMoney = parseFloat(target.value) || 0;
+            syncState();
+        });
+    }
+
     // Global Click Sound for buttons
     document.addEventListener('click', (e) => {
         const target = e.target as HTMLElement | null;
