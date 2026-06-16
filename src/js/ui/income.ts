@@ -10,7 +10,9 @@ export function renderIncomes(): void {
     if (!list) return;
     list.innerHTML = '';
     const viewStr = context.viewingDate.toDateString();
-    const viewedIncomes = (state.incomes || []).filter(inc => new Date(inc.date).toDateString() === viewStr).reverse();
+    const viewedIncomes = (state.incomes || [])
+        .filter(inc => new Date(inc.date).toDateString() === viewStr && !inc.note.startsWith('Savings Withdrawal'))
+        .reverse();
 
     if (viewedIncomes.length === 0) {
         list.innerHTML = '<li style="justify-content:center; color: var(--text-secondary)">No income logged on this date.</li>';

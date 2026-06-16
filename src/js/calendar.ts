@@ -46,7 +46,7 @@ export function updateCalendar(): void {
         const dayPurchases = getDailyPurchases(cellDate).filter(p => !(p.category === 'Savings' && p.comment.startsWith('Savings Spend:')));
         const dayTotal = dayPurchases.reduce((sum, p) => sum + parseFloat(p.amount.toString()), 0);
         
-        const dayIncomes = getDailyIncomes(cellDate).filter(inc => !inc.note.startsWith('Savings Withdrawal:'));
+        const dayIncomes = getDailyIncomes(cellDate).filter(inc => !inc.note.startsWith('Savings Withdrawal'));
         const dayIncomeTotal = dayIncomes.reduce((sum, inc) => sum + parseFloat(inc.amount.toString()), 0);
 
         if (dayTotal > 0) cell.classList.add('has-spending');

@@ -132,7 +132,7 @@ export function calculateQuotaForDate(targetDate: Date): { base: number; quota: 
             totalSpentPast += parseFloat(dayPurchases[i].amount.toString());
         }
 
-        const dayIncomes = (groupedIncomes!.get(dStr) || []).filter(inc => !inc.note.startsWith('Savings Withdrawal:'));
+        const dayIncomes = (groupedIncomes!.get(dStr) || []).filter(inc => !inc.note.startsWith('Savings Withdrawal'));
         for (let i = 0; i < dayIncomes.length; i++) {
             totalIncomePast += parseFloat(dayIncomes[i].amount.toString());
         }
@@ -159,7 +159,7 @@ export function calculateQuotaForDate(targetDate: Date): { base: number; quota: 
     const todaysTopUps = groupedTopUps!.get(targetDStr) || [];
     const totalTopUpsToday = todaysTopUps.reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
 
-    const todaysIncomes = (groupedIncomes!.get(targetDStr) || []).filter(inc => !inc.note.startsWith('Savings Withdrawal:'));
+    const todaysIncomes = (groupedIncomes!.get(targetDStr) || []).filter(inc => !inc.note.startsWith('Savings Withdrawal'));
     const totalIncomeToday = todaysIncomes.reduce((sum, inc) => sum + parseFloat(inc.amount.toString()), 0);
 
     const currentQuota = baseDailyQuota + carryover + totalTopUpsToday + totalIncomeToday - spentToday;
@@ -192,7 +192,7 @@ export function getRemainingBudgetForPeriod(targetDate: Date): number {
             totalSpent += parseFloat(dayPurchases[i].amount.toString());
         }
 
-        const dayIncomes = (groupedIncomes!.get(dStr) || []).filter(inc => !inc.note.startsWith('Savings Withdrawal:'));
+        const dayIncomes = (groupedIncomes!.get(dStr) || []).filter(inc => !inc.note.startsWith('Savings Withdrawal'));
         for (let i = 0; i < dayIncomes.length; i++) {
             totalIncome += parseFloat(dayIncomes[i].amount.toString());
         }
