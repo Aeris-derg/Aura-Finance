@@ -106,8 +106,8 @@ export function renderStreaks(): void {
         }
 
         if (showSavingsGoal) {
-            const balance = state.savingsBalance || 0;
-            const goal = state.savingsGoal || 0;
+            const balance = Number(state.savingsBalance) || 0;
+            const goal = Number(state.savingsGoal) || 0;
             const percent = goal > 0 ? Math.min(100, Math.max(0, (balance / goal) * 100)) : 0;
             const div = document.createElement('div');
             div.className = 'streak-item';

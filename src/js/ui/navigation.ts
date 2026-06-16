@@ -17,6 +17,7 @@ export function switchTab(tabName: string): void {
     const cardIds = [
         'card-log-purchase',
         'card-quick-add',
+        'card-saving',
         'card-groceries',
         'card-add-income',
         'card-manage-budget',

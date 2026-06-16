@@ -136,7 +136,8 @@ export function initExpensesEvents(): void {
             const amount = parseFloat(transferAmtInput.value);
             if (isNaN(amount) || amount <= 0) return;
 
-            state.savingsBalance = (state.savingsBalance || 0) + amount;
+            const currentSavings = Number(state.savingsBalance) || 0;
+            state.savingsBalance = currentSavings + amount;
             state.purchases.push({
                 id: Date.now().toString(),
                 amount: amount,
@@ -163,7 +164,7 @@ export function initExpensesEvents(): void {
             const note = spendNoteInput.value.trim();
             if (isNaN(amount) || amount <= 0 || !note) return;
 
-            const currentBalance = state.savingsBalance || 0;
+            const currentBalance = Number(state.savingsBalance) || 0;
             if (amount > currentBalance) {
                 alert("Insufficient savings balance! You only have £" + currentBalance.toFixed(2) + " in savings.");
                 sounds.error();
