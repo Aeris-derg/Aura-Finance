@@ -235,6 +235,17 @@
                         </div>
                         <button type="submit" class="btn primary full-width"><i class="ri-arrow-right-line"></i> Transfer to Savings</button>
                     </form>
+
+                    <div style="margin-top: 20px; border-top: 1px dashed var(--glass-border); padding-top: 20px;">
+                        <h4 style="margin-bottom: 10px; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><i class="ri-shopping-bag-line" style="color: var(--danger-color);"></i> Spend from Savings</h4>
+                        <form id="savings-spend-form" onsubmit="event.preventDefault();">
+                            <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                <input type="number" id="savings-spend-amount" required min="0.01" step="0.01" placeholder="Amount (£)" style="min-width: 0; flex: 1; height: 42px;">
+                                <input type="text" id="savings-spend-note" required placeholder="Note (e.g. Dinner)" style="min-width: 0; flex: 2; height: 42px;">
+                            </div>
+                            <button type="submit" class="btn primary full-width" style="background: linear-gradient(135deg, var(--danger-color), #dc2626);"><i class="ri-subtract-line"></i> Spend from Savings</button>
+                        </form>
+                    </div>
                 </section>
 
                 <!-- Groceries List Section -->

@@ -150,4 +150,49 @@ export function initExpensesEvents(): void {
             syncState();
         });
     }
+
+    // Savings Spend Form Submit
+    const savingsSpendForm = dom.get<HTMLFormElement>('savings-spend-form');
+    if (savingsSpendForm) {
+        savingsSpendForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const spendAmtInput = dom.get<HTMLInputElement>('savings-spend-amount');
+            const spendNoteInput = dom.get<HTMLInputElement>('savings-spend-note');
+            if (!spendAmtInput || !spendNoteInput) return;
+            const amount = parseFloat(spendAmtInput.value);
+            const note = spendNoteInput.value.trim();
+            if (isNaN(amount) || amount <= 0 || !note) return;
+
+            const currentBalance = state.savingsBalance || 0;
+            if (amount > currentBalance) {
+                alert("Insufficient savings balance! You only have £" + currentBalance.toFixed(2) + " in savings.");
+                sounds.error();
+                return;
+            }
+
+            state.savingsBalance = currentBalance - amount;
+            
+            // Log as a purchase (expense)
+            state.purchases.push({
+                id: Date.now().toString(),
+                amount: amount,
+                category: 'Savings',
+                comment: `Savings Spend: ${note}`,
+                date: context.viewingDate.toISOString()
+            });
+
+            // Log as an income (offset) so available quota is unaffected
+            if (!state.incomes) state.incomes = [];
+            state.incomes.push({
+                id: Date.now().toString() + '-offset',
+                amount: amount,
+                note: `Savings Withdrawal: ${note}`,
+                date: context.viewingDate.toISOString()
+            });
+
+            sounds.success();
+            savingsSpendForm.reset();
+            syncState();
+        });
+    }
 }
