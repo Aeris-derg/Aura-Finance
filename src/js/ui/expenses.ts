@@ -62,16 +62,44 @@ export function renderGroceries(): void {
     if (!list) return;
     list.innerHTML = '';
 
+    const sorted = [...state.groceries].sort((a, b) => {
+        if (a.checked !== b.checked) return a.checked ? 1 : -1;
+        const priorityVal = { high: 3, medium: 2, low: 1 };
+        const valA = priorityVal[a.priority || 'medium'];
+        const valB = priorityVal[b.priority || 'medium'];
+        return valB - valA;
+    });
+
     const fragment = document.createDocumentFragment();
-    state.groceries.forEach(g => {
+    sorted.forEach(g => {
         const li = document.createElement('li');
         if (g.checked) li.classList.add('checked');
         
         let unitStr = g.unit ? ` ${g.unit}` : '';
         const qtyStr = g.qty ? `${g.qty}${unitStr} ` : '';
         
+        const priorityColors = g.priority === 'high' 
+            ? { bg: 'rgba(235, 94, 85, 0.15)', fg: '#eb5e55' } 
+            : g.priority === 'low' 
+            ? { bg: 'rgba(74, 201, 151, 0.15)', fg: '#4ac997' } 
+            : { bg: 'rgba(244, 208, 111, 0.15)', fg: '#f4d06f' };
+
+        const priorityBadge = `
+            <span style="font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; text-transform: uppercase; margin-right: 8px; background: ${priorityColors.bg}; color: ${priorityColors.fg}; display: inline-block; vertical-align: middle;">
+                ${g.priority || 'medium'}
+            </span>
+        `;
+
+        const priceText = g.price && g.price > 0 
+            ? `<span style="font-size: 0.8rem; color: var(--text-secondary); margin-left: 10px; font-weight: 500;">(${formatMoney(g.price)}${g.qty > 1 ? ` x ${g.qty} = ${formatMoney(g.price * g.qty)}` : ''})</span>` 
+            : '';
+
         li.innerHTML = `
-            <span class="item-name">${qtyStr}${g.name}</span>
+            <span class="item-name" style="display: flex; align-items: center; flex: 1;">
+                ${priorityBadge}
+                <span>${qtyStr}${g.name}</span>
+                ${priceText}
+            </span>
             <div style="display:flex; align-items:center; gap: 10px;">
                 <button class="btn icon-btn delete" onclick="event.stopPropagation(); deleteGrocery('${g.id}')"><i class="ri-close-line"></i></button>
             </div>
@@ -116,8 +144,36 @@ window.deleteGrocery = (id: string): void => {
 window.toggleGrocery = (id: string): void => {
     const item = state.groceries.find(g => g.id === id);
     if (item) {
+        const wasChecked = item.checked;
         item.checked = !item.checked;
-        sounds.click();
+        
+        if (!wasChecked && item.checked) {
+            // Just checked it off: if it has a price, log it as a purchase
+            if (item.price && item.price > 0) {
+                const totalCost = item.price * (item.qty || 1);
+                const unitStr = item.unit ? ` ${item.unit}` : '';
+                const commentStr = `${item.qty ? item.qty + unitStr + ' ' : ''}${item.name} (from Grocery List)`;
+                
+                state.purchases.push({
+                    id: Date.now().toString(),
+                    amount: totalCost,
+                    category: 'Groceries',
+                    comment: commentStr,
+                    date: context.viewingDate.toISOString()
+                });
+                sounds.success();
+            } else {
+                sounds.click();
+            }
+        } else {
+            sounds.click();
+        }
         syncState();
     }
+};
+
+window.clearCheckedGroceries = (): void => {
+    state.groceries = state.groceries.filter(g => !g.checked);
+    sounds.delete();
+    syncState();
 };

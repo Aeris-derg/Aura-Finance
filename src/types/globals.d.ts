@@ -12,4 +12,5 @@ interface Window {
   settleDebt: (id: string) => void;
   deleteDebt: (id: string) => void;
   deleteSubscription: (id: string) => void;
+  clearCheckedGroceries: () => void;
 }

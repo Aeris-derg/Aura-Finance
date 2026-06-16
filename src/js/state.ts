@@ -44,6 +44,8 @@ export interface Grocery {
     qty: number;
     unit: string;
     checked: boolean;
+    priority?: 'low' | 'medium' | 'high';
+    price?: number;
 }
 
 export interface Subscription {

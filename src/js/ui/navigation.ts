@@ -40,10 +40,19 @@ export function switchTab(tabName: string): void {
     if (tabName === 'expenses') {
         gridLayout.classList.remove('two-cols');
         gridLayout.style.display = 'grid';
-        ['card-log-purchase', 'card-quick-add', 'card-groceries'].forEach(id => {
+        ['card-log-purchase', 'card-quick-add'].forEach(id => {
             const el = dom.get<HTMLElement>(id);
             if (el) el.classList.remove('hidden');
         });
+    } else if (tabName === 'groceries') {
+        gridLayout.classList.remove('two-cols');
+        gridLayout.style.display = 'block';
+        const el = dom.get<HTMLElement>('card-groceries');
+        if (el) {
+            el.classList.remove('hidden');
+            el.style.maxWidth = '600px';
+            el.style.margin = '0 auto';
+        }
     } else if (tabName === 'budget') {
         gridLayout.classList.add('two-cols');
         gridLayout.style.display = 'grid';

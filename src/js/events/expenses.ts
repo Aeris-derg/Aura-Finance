@@ -92,20 +92,37 @@ export function initExpensesEvents(): void {
             const nameInput = dom.get<HTMLInputElement>('grocery-name');
             const qtyInput = dom.get<HTMLInputElement>('grocery-qty');
             const unitSelect = dom.get<HTMLSelectElement>('grocery-unit');
+            const prioritySelect = dom.get<HTMLSelectElement>('grocery-priority');
+            const priceInput = dom.get<HTMLInputElement>('grocery-price');
             if (!nameInput) return;
             
+            const priority = (prioritySelect ? prioritySelect.value : 'medium') as 'low' | 'medium' | 'high';
+            const price = priceInput && priceInput.value ? parseFloat(priceInput.value) : undefined;
+
             state.groceries.push({
                 id: Date.now().toString(),
                 name: nameInput.value,
                 qty: qtyInput ? (parseInt(qtyInput.value) || 1) : 1,
                 unit: unitSelect ? unitSelect.value : '',
-                checked: false
+                checked: false,
+                priority,
+                price
             });
             sounds.click();
             groceryForm.reset();
             if (qtyInput) qtyInput.value = '1';
             if (unitSelect) unitSelect.value = '';
+            if (prioritySelect) prioritySelect.value = 'medium';
+            if (priceInput) priceInput.value = '';
             syncState();
+        });
+    }
+
+    // Clear Checked Groceries
+    const clearCheckedBtn = dom.get<HTMLButtonElement>('clear-checked-groceries');
+    if (clearCheckedBtn) {
+        clearCheckedBtn.addEventListener('click', () => {
+            window.clearCheckedGroceries();
         });
     }
 }

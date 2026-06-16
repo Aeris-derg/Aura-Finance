@@ -151,6 +151,9 @@
                 <button class="app-tab-btn active" data-tab="expenses">
                     <i class="ri-shopping-cart-2-line"></i> Expenses
                 </button>
+                <button class="app-tab-btn" data-tab="groceries">
+                    <i class="ri-shopping-basket-line"></i> Needed Groceries
+                </button>
                 <button class="app-tab-btn" data-tab="income">
                     <i class="ri-add-circle-line"></i> Add Income
                 </button>
@@ -216,22 +219,35 @@
                 </section>
 
                 <!-- Groceries List Section -->
-                <section id="card-groceries" class="card glass">
-                    <h3><i class="ri-shopping-basket-line"></i> Needed Groceries</h3>
-                    <form id="grocery-form" class="inline-form">
-                        <input type="number" id="grocery-qty" value="1" min="1" style="min-width: 0; width: 50px; flex: none;" title="Quantity">
-                        <select id="grocery-unit" style="min-width: 0; width: 70px; flex: none; padding: 12px 5px;" title="Unit">
-                            <option value="">-</option>
-                            <option value="kg">kg</option>
-                            <option value="g">g</option>
-                            <option value="lbs">lbs</option>
-                            <option value="L">L</option>
-                            <option value="ml">ml</option>
-                            <option value="pcs">pcs</option>
-                            <option value="boxes">boxes</option>
-                        </select>
-                        <input type="text" id="grocery-name" required placeholder="Item name" style="min-width: 0; flex: 1;">
-                        <button type="submit" class="btn icon-btn"><i class="ri-add-line"></i></button>
+                <section id="card-groceries" class="card glass hidden">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;"><i class="ri-shopping-basket-line"></i> Needed Groceries</h3>
+                        <button type="button" id="clear-checked-groceries" class="btn secondary" style="font-size: 0.8rem; padding: 6px 12px; height: auto;"><i class="ri-delete-bin-line"></i> Clear Checked</button>
+                    </div>
+                    <form id="grocery-form">
+                        <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <input type="number" id="grocery-qty" value="1" min="1" style="min-width: 0; width: 60px; flex: none; height: 42px;" title="Quantity">
+                            <select id="grocery-unit" style="min-width: 0; width: 80px; flex: none; height: 42px;" title="Unit">
+                                <option value="">-</option>
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="lbs">lbs</option>
+                                <option value="L">L</option>
+                                <option value="ml">ml</option>
+                                <option value="pcs">pcs</option>
+                                <option value="boxes">boxes</option>
+                            </select>
+                            <input type="text" id="grocery-name" required placeholder="Item name" style="min-width: 0; flex: 1; height: 42px;">
+                        </div>
+                        <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <select id="grocery-priority" style="flex: 1; height: 42px;" title="Priority">
+                                <option value="low">🟢 Low Priority</option>
+                                <option value="medium" selected>🟡 Medium Priority</option>
+                                <option value="high">🔴 High Priority</option>
+                            </select>
+                            <input type="number" id="grocery-price" min="0" step="0.01" placeholder="Price (£ - Optional)" style="flex: 1; height: 42px;">
+                        </div>
+                        <button type="submit" class="btn primary full-width" style="margin-bottom: 15px;">Add to Grocery List</button>
                     </form>
                     <ul id="grocery-list" class="item-list checkable-list"></ul>
                 </section>
