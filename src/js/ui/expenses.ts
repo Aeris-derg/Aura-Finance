@@ -177,3 +177,10 @@ window.clearCheckedGroceries = (): void => {
     sounds.delete();
     syncState();
 };
+
+export function renderSavings(): void {
+    const el = dom.get<HTMLElement>('savings-balance');
+    if (el) {
+        el.textContent = formatMoney(state.savingsBalance || 0);
+    }
+}

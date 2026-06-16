@@ -153,7 +153,9 @@ export function initSetupEvents(): void {
                         streakOptTakeout: false,
                         streakStartTakeout: null,
                         streakOptSaving: false,
-                        streakStartSaving: null
+                        streakStartSaving: null,
+                        savingsBalance: 0,
+                        savingsGoal: 0
                     };
                     joinGroup(gId, true, initialData);
                 })

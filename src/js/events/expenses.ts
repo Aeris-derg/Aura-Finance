@@ -125,4 +125,29 @@ export function initExpensesEvents(): void {
             window.clearCheckedGroceries();
         });
     }
+
+    // Savings Form Submit
+    const savingsForm = dom.get<HTMLFormElement>('savings-form');
+    if (savingsForm) {
+        savingsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const transferAmtInput = dom.get<HTMLInputElement>('savings-transfer-amount');
+            if (!transferAmtInput) return;
+            const amount = parseFloat(transferAmtInput.value);
+            if (isNaN(amount) || amount <= 0) return;
+
+            state.savingsBalance = (state.savingsBalance || 0) + amount;
+            state.purchases.push({
+                id: Date.now().toString(),
+                amount: amount,
+                category: 'Savings',
+                comment: 'Transferred to Savings',
+                date: context.viewingDate.toISOString()
+            });
+
+            sounds.success();
+            savingsForm.reset();
+            syncState();
+        });
+    }
 }

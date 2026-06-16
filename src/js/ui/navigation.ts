@@ -40,7 +40,7 @@ export function switchTab(tabName: string): void {
     if (tabName === 'expenses') {
         gridLayout.classList.remove('two-cols');
         gridLayout.style.display = 'grid';
-        ['card-log-purchase', 'card-quick-add'].forEach(id => {
+        ['card-log-purchase', 'card-quick-add', 'card-saving'].forEach(id => {
             const el = dom.get<HTMLElement>(id);
             if (el) el.classList.remove('hidden');
         });

@@ -55,4 +55,17 @@ export function initStreaksEvents(): void {
             syncState();
         });
     }
+
+    const updateGoalBtn = dom.get<HTMLButtonElement>('update-savings-goal-btn');
+    if (updateGoalBtn) {
+        updateGoalBtn.addEventListener('click', () => {
+            const input = dom.get<HTMLInputElement>('streak-savings-goal');
+            if (input) {
+                const val = parseFloat(input.value);
+                state.savingsGoal = isNaN(val) || val < 0 ? 0 : val;
+                sounds.success();
+                syncState();
+            }
+        });
+    }
 }

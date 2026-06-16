@@ -9,7 +9,7 @@ import {
     getRemainingBudgetForPeriod
 } from '../budget.js';
 import { applyTheme, applyDarkMode } from './theme.js';
-import { formatMoney, renderPurchases, renderQuickAdds, renderGroceries } from './expenses.js';
+import { formatMoney, renderPurchases, renderQuickAdds, renderGroceries, renderSavings } from './expenses.js';
 import { renderIncomes, renderTopUps } from './income.js';
 import { renderDebts } from './debts.js';
 import { renderSubscriptions, checkAndApplySubscriptions } from './subscriptions.js';
@@ -115,7 +115,7 @@ export function updateUI(): void {
         }
     }
 
-    const anyStreakActive = !!state.streakOptOverspending || !!state.streakOptTakeout || !!state.streakOptSaving;
+    const anyStreakActive = !!state.streakOptOverspending || !!state.streakOptTakeout || !!state.streakOptSaving || (state.savingsGoal > 0);
     
     const dbStreaksCard = dom.get<HTMLElement>('dashboard-streaks-card');
     if (dbStreaksCard) {
@@ -132,13 +132,14 @@ export function updateUI(): void {
         dbRightCol.style.display = showRightCol ? 'flex' : 'none';
     }
 
-    if (dashboardSection) {
+    const dashboardSectionEl = dom.get<HTMLElement>('dashboard-section');
+    if (dashboardSectionEl) {
         if (showRightCol) {
-            dashboardSection.classList.remove('full-width');
-            dashboardSection.style.gridTemplateColumns = '2fr 1.2fr';
+            dashboardSectionEl.classList.remove('full-width');
+            dashboardSectionEl.style.gridTemplateColumns = '2fr 1.2fr';
         } else {
-            dashboardSection.classList.add('full-width');
-            dashboardSection.style.gridTemplateColumns = '1fr';
+            dashboardSectionEl.classList.add('full-width');
+            dashboardSectionEl.style.gridTemplateColumns = '1fr';
         }
     }
     // Only show checkbox for monthly mode; hide it when daily
@@ -153,9 +154,11 @@ export function updateUI(): void {
     const optOverspending = dom.get<HTMLInputElement>('streak-opt-overspending');
     const optTakeout = dom.get<HTMLInputElement>('streak-opt-takeout');
     const optSaving = dom.get<HTMLInputElement>('streak-opt-saving');
+    const savingGoalInput = dom.get<HTMLInputElement>('streak-savings-goal');
     if (optOverspending) optOverspending.checked = !!state.streakOptOverspending;
     if (optTakeout) optTakeout.checked = !!state.streakOptTakeout;
     if (optSaving) optSaving.checked = !!state.streakOptSaving;
+    if (savingGoalInput) savingGoalInput.value = state.savingsGoal ? state.savingsGoal.toString() : '';
 
     const catSelect = dom.get<HTMLSelectElement>('purchase-category');
     if (catSelect) {
@@ -178,6 +181,7 @@ export function updateUI(): void {
     renderPurchases();
     renderQuickAdds();
     renderGroceries();
+    renderSavings();
     renderIncomes();
     renderTopUps();
     renderDebts();

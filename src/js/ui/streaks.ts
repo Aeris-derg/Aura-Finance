@@ -58,15 +58,16 @@ export function renderStreaks(): void {
     const showOverspending = !!state.streakOptOverspending;
     const showTakeout = !!state.streakOptTakeout;
     const showSaving = !!state.streakOptSaving;
+    const showSavingsGoal = (state.savingsGoal || 0) > 0;
 
     const buildHTML = (containerId: string, activeTitleId: string) => {
         const container = dom.get<HTMLElement>(containerId);
         const activeTitle = dom.get<HTMLElement>(activeTitleId);
         if (!container) return;
 
-        if (!showOverspending && !showTakeout && !showSaving) {
+        if (!showOverspending && !showTakeout && !showSaving && !showSavingsGoal) {
             if (activeTitle) activeTitle.style.display = 'none';
-            container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 0.95rem; margin-top: 10px;">No streaks enabled. Check options above to begin tracking.</div>';
+            container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 0.95rem; margin-top: 10px;">No streaks or goals enabled. Check options above to begin tracking.</div>';
             return;
         }
 
@@ -103,6 +104,29 @@ export function renderStreaks(): void {
             const count = calculateStreakForType('saving');
             renderItem('Surplus / Savings', count, state.streakStartSaving, '#54a0ff');
         }
+
+        if (showSavingsGoal) {
+            const balance = state.savingsBalance || 0;
+            const goal = state.savingsGoal || 0;
+            const percent = goal > 0 ? Math.min(100, Math.max(0, (balance / goal) * 100)) : 0;
+            const div = document.createElement('div');
+            div.className = 'streak-item';
+            div.style.flexDirection = 'column';
+            div.style.alignItems = 'stretch';
+            div.style.gap = '8px';
+            div.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="streak-name" style="font-weight:600;"><i class="ri-bank-line" style="color:var(--success-color);"></i> Savings Goal</span>
+                    <span style="font-size:0.9rem; font-weight:700; color:var(--success-color);">£${balance.toFixed(2)} / £${goal.toFixed(2)}</span>
+                </div>
+                <div class="progress-container" style="margin-top: 5px; height: 8px;">
+                    <div class="progress-bar" style="width: ${percent}%; background: linear-gradient(135deg, #38ef7d, #11998e);"></div>
+                </div>
+                <div style="text-align: right; font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">${percent.toFixed(0)}% Completed</div>
+            `;
+            fragment.appendChild(div);
+        }
+
         container.appendChild(fragment);
     };
 
