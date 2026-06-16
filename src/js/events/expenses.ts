@@ -182,15 +182,6 @@ export function initExpensesEvents(): void {
                 date: context.viewingDate.toISOString()
             });
 
-            // Log as an income (offset) so available quota is unaffected
-            if (!state.incomes) state.incomes = [];
-            state.incomes.push({
-                id: Date.now().toString() + '-offset',
-                amount: amount,
-                note: `Savings Withdrawal: ${note}`,
-                date: context.viewingDate.toISOString()
-            });
-
             sounds.success();
             savingsSpendForm.reset();
             syncState();
