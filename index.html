@@ -61,6 +61,23 @@
                     <label for="custom-month-length">Days in Month (Leave 0 for automatic)</label>
                     <input type="number" id="custom-month-length" value="0" min="0" max="60">
                 </div>
+
+                <!-- Monthly Setup Options -->
+                <div id="setup-monthly-options" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="setup-hide-daily-quota" style="width: auto; margin: 0; cursor: pointer;">
+                        <label for="setup-hide-daily-quota" style="margin: 0; cursor: pointer; font-size: 0.95rem;">Hide Daily Quota Card</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="setup-show-current-money" style="width: auto; margin: 0; cursor: pointer;">
+                        <label for="setup-show-current-money" style="margin: 0; cursor: pointer; font-size: 0.95rem;">Track/Show Current Money</label>
+                    </div>
+                    <div class="form-group hidden" id="setup-current-money-group">
+                        <label for="setup-current-money-input" style="font-size: 0.9rem; margin-bottom: 4px;">Starting Current Money (£)</label>
+                        <input type="number" id="setup-current-money-input" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                </div>
+
                 <button type="submit" class="btn primary full-width">Create Group</button>
             </form>
         </div>
@@ -107,6 +124,11 @@
                         <div class="progress-container">
                             <div class="progress-bar" id="budget-progress"></div>
                         </div>
+                    </div>
+
+                    <div class="card glass secondary-card hidden" id="current-money-card" style="margin: 0; width: 100%;">
+                        <h3>Current Money</h3>
+                        <div class="amount small" id="current-money-amount">£0.00</div>
                     </div>
                     
                     <div class="card glass hidden" id="dashboard-streaks-card" style="margin: 0; width: 100%;">
@@ -324,6 +346,22 @@
                         <div class="form-group" style="margin-top: 15px; display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
                             <input type="checkbox" id="hide-remaining-budget" style="width: auto; margin: 0; cursor: pointer;">
                             <label for="hide-remaining-budget" style="margin: 0; cursor: pointer; display: inline; font-size: 0.95rem;">Hide Remaining Budget Card</label>
+                        </div>
+
+                        <!-- Monthly Budget Specific Settings -->
+                        <div id="monthly-only-settings" style="margin-top: 15px; display: flex; flex-direction: column; gap: 12px; border-top: 1px dashed var(--glass-border); padding-top: 15px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="hide-daily-quota" style="width: auto; margin: 0; cursor: pointer;">
+                                <label for="hide-daily-quota" style="margin: 0; cursor: pointer; font-size: 0.95rem;">Hide Daily Quota Card</label>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="show-current-money" style="width: auto; margin: 0; cursor: pointer;">
+                                <label for="show-current-money" style="margin: 0; cursor: pointer; font-size: 0.95rem;">Track/Show Current Money (Actual Balance)</label>
+                            </div>
+                            <div class="form-group hidden" id="current-money-group" style="margin-top: 5px;">
+                                <label for="current-money-input" style="font-size: 0.9rem; margin-bottom: 4px;">Starting Current Money (£)</label>
+                                <input type="number" id="current-money-input" step="0.01" min="0" placeholder="0.00">
+                            </div>
                         </div>
                     </form>
                 </section>

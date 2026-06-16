@@ -102,7 +102,6 @@ export function updateUI(): void {
 
     const hideRemaining = isDaily || !!state.hideRemainingBudget;
     const remainingCard = dom.get<HTMLElement>('remaining-budget-card');
-    const dashboardSection = dom.get<HTMLElement>('dashboard-section');
     const hideCheckbox = dom.get<HTMLInputElement>('hide-remaining-budget');
     
     const showRemaining = !hideRemaining;
@@ -112,6 +111,34 @@ export function updateUI(): void {
             remainingCard.classList.remove('hidden');
         } else {
             remainingCard.classList.add('hidden');
+        }
+    }
+
+    // Toggle Current Money visibility
+    const showCurrentMoney = isDaily ? false : !!state.showCurrentMoney;
+    const currentMoneyCard = dom.get<HTMLElement>('current-money-card');
+    if (currentMoneyCard) {
+        if (showCurrentMoney) {
+            currentMoneyCard.classList.remove('hidden');
+            const currentMoneyVal = (state.currentMoney || 0) + remaining - baseBudget;
+            const currentMoneyAmtEl = dom.get<HTMLElement>('current-money-amount');
+            if (currentMoneyAmtEl) {
+                currentMoneyAmtEl.textContent = formatMoney(currentMoneyVal);
+                currentMoneyAmtEl.style.color = currentMoneyVal < 0 ? 'var(--danger-color)' : 'var(--text-primary)';
+            }
+        } else {
+            currentMoneyCard.classList.add('hidden');
+        }
+    }
+
+    // Toggle Quota Card visibility
+    const hideQuota = isDaily ? false : !!state.hideDailyQuota;
+    const quotaCard = dom.get<HTMLElement>('quota-card');
+    if (quotaCard) {
+        if (hideQuota) {
+            quotaCard.classList.add('hidden');
+        } else {
+            quotaCard.classList.remove('hidden');
         }
     }
 
@@ -126,22 +153,55 @@ export function updateUI(): void {
         }
     }
 
-    const showRightCol = showRemaining || anyStreakActive;
+    const hasRightColData = showRemaining || anyStreakActive || showCurrentMoney;
     const dbRightCol = dom.get<HTMLElement>('dashboard-right-col');
     if (dbRightCol) {
-        dbRightCol.style.display = showRightCol ? 'flex' : 'none';
+        dbRightCol.style.display = hasRightColData ? 'flex' : 'none';
     }
 
+    const showSideBySide = hasRightColData && !hideQuota;
     const dashboardSectionEl = dom.get<HTMLElement>('dashboard-section');
     if (dashboardSectionEl) {
-        if (showRightCol) {
+        if (showSideBySide) {
             dashboardSectionEl.classList.remove('full-width');
-            dashboardSectionEl.style.gridTemplateColumns = '2fr 1.2fr';
+            dashboardSectionEl.classList.add('has-right-col');
         } else {
             dashboardSectionEl.classList.add('full-width');
-            dashboardSectionEl.style.gridTemplateColumns = '1fr';
+            dashboardSectionEl.classList.remove('has-right-col');
+        }
+        dashboardSectionEl.style.gridTemplateColumns = '';
+    }
+
+    // Populate budget settings fields
+    const hideQuotaCheckbox = dom.get<HTMLInputElement>('hide-daily-quota');
+    if (hideQuotaCheckbox) {
+        hideQuotaCheckbox.checked = !!state.hideDailyQuota;
+    }
+
+    const showCurrentMoneyCheckbox = dom.get<HTMLInputElement>('show-current-money');
+    if (showCurrentMoneyCheckbox) {
+        showCurrentMoneyCheckbox.checked = !!state.showCurrentMoney;
+    }
+
+    const currentMoneyInput = dom.get<HTMLInputElement>('current-money-input');
+    if (currentMoneyInput) {
+        currentMoneyInput.value = state.currentMoney ? state.currentMoney.toString() : '';
+    }
+
+    const monthlyOnlySettings = dom.get<HTMLElement>('monthly-only-settings');
+    if (monthlyOnlySettings) {
+        monthlyOnlySettings.style.display = isDaily ? 'none' : 'flex';
+    }
+
+    const currentMoneyGroup = dom.get<HTMLElement>('current-money-group');
+    if (currentMoneyGroup) {
+        if (!isDaily && state.showCurrentMoney) {
+            currentMoneyGroup.classList.remove('hidden');
+        } else {
+            currentMoneyGroup.classList.add('hidden');
         }
     }
+
     // Only show checkbox for monthly mode; hide it when daily
     const checkboxWrapper = hideCheckbox ? hideCheckbox.closest('div') : null;
     if (checkboxWrapper) {

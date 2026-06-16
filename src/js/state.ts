@@ -80,6 +80,9 @@ export interface AppState {
     streakStartSaving: string | null;
     savingsBalance: number;
     savingsGoal: number;
+    hideDailyQuota?: boolean;
+    showCurrentMoney?: boolean;
+    currentMoney?: number;
 }
 
 export const defaultState: AppState = {
@@ -106,7 +109,10 @@ export const defaultState: AppState = {
     streakOptSaving: false,
     streakStartSaving: null,
     savingsBalance: 0,
-    savingsGoal: 0
+    savingsGoal: 0,
+    hideDailyQuota: false,
+    showCurrentMoney: false,
+    currentMoney: 0
 };
 
 // Central synchronized state object (singleton reference)

@@ -79,12 +79,30 @@ export function initSetupEvents(): void {
             const target = e.target as HTMLSelectElement;
             const label = dom.get<HTMLElement>('setup-budget-label');
             const monthLengthGroup = dom.get<HTMLElement>('setup-month-length-group');
+            const monthlyOptions = dom.get<HTMLElement>('setup-monthly-options');
             if (target.value === 'daily') {
                 if (label) label.textContent = "Daily Budget (£)";
                 if (monthLengthGroup) monthLengthGroup.classList.add('hidden');
+                if (monthlyOptions) monthlyOptions.classList.add('hidden');
             } else {
                 if (label) label.textContent = "Monthly Budget (£)";
                 if (monthLengthGroup) monthLengthGroup.classList.remove('hidden');
+                if (monthlyOptions) monthlyOptions.classList.remove('hidden');
+            }
+        });
+    }
+
+    const setupShowCurrentMoney = dom.get<HTMLInputElement>('setup-show-current-money');
+    if (setupShowCurrentMoney) {
+        setupShowCurrentMoney.addEventListener('change', (e) => {
+            const target = e.target as HTMLInputElement;
+            const currentMoneyGroup = dom.get<HTMLElement>('setup-current-money-group');
+            if (currentMoneyGroup) {
+                if (target.checked) {
+                    currentMoneyGroup.classList.remove('hidden');
+                } else {
+                    currentMoneyGroup.classList.add('hidden');
+                }
             }
         });
     }
@@ -108,6 +126,9 @@ export function initSetupEvents(): void {
             const budgetAmount = parseFloat(dom.get<HTMLInputElement>('setup-budget-amount')?.value || '0');
             const payday = parseInt(dom.get<HTMLInputElement>('payday')?.value || '1');
             const customMonthLength = parseInt(dom.get<HTMLInputElement>('custom-month-length')?.value || '0') || 0;
+            const hideDailyQuota = dom.get<HTMLInputElement>('setup-hide-daily-quota')?.checked || false;
+            const showCurrentMoney = dom.get<HTMLInputElement>('setup-show-current-money')?.checked || false;
+            const currentMoney = parseFloat(dom.get<HTMLInputElement>('setup-current-money-input')?.value || '0') || 0;
 
             // Check if group already exists in Firebase
             db.ref('groups/' + gId).once('value')
@@ -155,7 +176,10 @@ export function initSetupEvents(): void {
                         streakOptSaving: false,
                         streakStartSaving: null,
                         savingsBalance: 0,
-                        savingsGoal: 0
+                        savingsGoal: 0,
+                        hideDailyQuota,
+                        showCurrentMoney,
+                        currentMoney
                     };
                     joinGroup(gId, true, initialData);
                 })

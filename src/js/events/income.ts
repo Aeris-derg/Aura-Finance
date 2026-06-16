@@ -37,11 +37,29 @@ export function initIncomeEvents(): void {
         adjustBudgetType.addEventListener('change', (e) => {
             const target = e.target as HTMLSelectElement;
             const label = dom.get<HTMLElement>('adjust-budget-label');
+            const monthlyOnlySettings = dom.get<HTMLElement>('monthly-only-settings');
             if (label) {
                 if (target.value === 'daily') {
                     label.textContent = "Daily Budget (£)";
+                    if (monthlyOnlySettings) monthlyOnlySettings.style.display = 'none';
                 } else {
                     label.textContent = "Monthly Budget (£)";
+                    if (monthlyOnlySettings) monthlyOnlySettings.style.display = 'flex';
+                }
+            }
+        });
+    }
+
+    const showCurrentMoneyChk = dom.get<HTMLInputElement>('show-current-money');
+    if (showCurrentMoneyChk) {
+        showCurrentMoneyChk.addEventListener('change', (e) => {
+            const target = e.target as HTMLInputElement;
+            const currentMoneyGroup = dom.get<HTMLElement>('current-money-group');
+            if (currentMoneyGroup) {
+                if (target.checked) {
+                    currentMoneyGroup.classList.remove('hidden');
+                } else {
+                    currentMoneyGroup.classList.add('hidden');
                 }
             }
         });
@@ -64,6 +82,11 @@ export function initIncomeEvents(): void {
                 state.dailyBudget = amount;
             } else {
                 state.budget = amount;
+                
+                // Save monthly options
+                state.hideDailyQuota = dom.get<HTMLInputElement>('hide-daily-quota')?.checked || false;
+                state.showCurrentMoney = dom.get<HTMLInputElement>('show-current-money')?.checked || false;
+                state.currentMoney = parseFloat(dom.get<HTMLInputElement>('current-money-input')?.value || '0') || 0;
             }
             
             sounds.success();
