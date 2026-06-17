@@ -50,21 +50,6 @@ export function initIncomeEvents(): void {
         });
     }
 
-    const showCurrentMoneyChk = dom.get<HTMLInputElement>('show-current-money');
-    if (showCurrentMoneyChk) {
-        showCurrentMoneyChk.addEventListener('change', (e) => {
-            const target = e.target as HTMLInputElement;
-            const currentMoneyGroup = dom.get<HTMLElement>('current-money-group');
-            if (currentMoneyGroup) {
-                if (target.checked) {
-                    currentMoneyGroup.classList.remove('hidden');
-                } else {
-                    currentMoneyGroup.classList.add('hidden');
-                }
-            }
-        });
-    }
-
     // Adjust Budget Form Submit
     const adjustBudgetForm = dom.get<HTMLFormElement>('adjust-budget-form');
     if (adjustBudgetForm) {
@@ -85,8 +70,6 @@ export function initIncomeEvents(): void {
                 
                 // Save monthly options
                 state.hideDailyQuota = dom.get<HTMLInputElement>('hide-daily-quota')?.checked || false;
-                state.showCurrentMoney = dom.get<HTMLInputElement>('show-current-money')?.checked || false;
-                state.currentMoney = parseFloat(dom.get<HTMLInputElement>('current-money-input')?.value || '0') || 0;
             }
             
             sounds.success();

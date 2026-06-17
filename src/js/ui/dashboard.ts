@@ -114,22 +114,8 @@ export function updateUI(): void {
         }
     }
 
-    // Toggle Current Money visibility
-    const showCurrentMoney = isDaily ? false : !!state.showCurrentMoney;
-    const currentMoneyCard = dom.get<HTMLElement>('current-money-card');
-    if (currentMoneyCard) {
-        if (showCurrentMoney) {
-            currentMoneyCard.classList.remove('hidden');
-            const currentMoneyVal = (state.currentMoney || 0) + remaining - baseBudget;
-            const currentMoneyAmtEl = dom.get<HTMLElement>('current-money-amount');
-            if (currentMoneyAmtEl) {
-                currentMoneyAmtEl.textContent = formatMoney(currentMoneyVal);
-                currentMoneyAmtEl.style.color = currentMoneyVal < 0 ? 'var(--danger-color)' : 'var(--text-primary)';
-            }
-        } else {
-            currentMoneyCard.classList.add('hidden');
-        }
-    }
+    // Toggle Current Money visibility (removed/disabled)
+    const showCurrentMoney = false;
 
     // Toggle Quota Card visibility
     const hideQuota = isDaily ? false : !!state.hideDailyQuota;
@@ -178,28 +164,9 @@ export function updateUI(): void {
         hideQuotaCheckbox.checked = !!state.hideDailyQuota;
     }
 
-    const showCurrentMoneyCheckbox = dom.get<HTMLInputElement>('show-current-money');
-    if (showCurrentMoneyCheckbox) {
-        showCurrentMoneyCheckbox.checked = !!state.showCurrentMoney;
-    }
-
-    const currentMoneyInput = dom.get<HTMLInputElement>('current-money-input');
-    if (currentMoneyInput) {
-        currentMoneyInput.value = state.currentMoney ? state.currentMoney.toString() : '';
-    }
-
     const monthlyOnlySettings = dom.get<HTMLElement>('monthly-only-settings');
     if (monthlyOnlySettings) {
         monthlyOnlySettings.style.display = isDaily ? 'none' : 'flex';
-    }
-
-    const currentMoneyGroup = dom.get<HTMLElement>('current-money-group');
-    if (currentMoneyGroup) {
-        if (!isDaily && state.showCurrentMoney) {
-            currentMoneyGroup.classList.remove('hidden');
-        } else {
-            currentMoneyGroup.classList.add('hidden');
-        }
     }
 
     // Only show checkbox for monthly mode; hide it when daily

@@ -92,21 +92,6 @@ export function initSetupEvents(): void {
         });
     }
 
-    const setupShowCurrentMoney = dom.get<HTMLInputElement>('setup-show-current-money');
-    if (setupShowCurrentMoney) {
-        setupShowCurrentMoney.addEventListener('change', (e) => {
-            const target = e.target as HTMLInputElement;
-            const currentMoneyGroup = dom.get<HTMLElement>('setup-current-money-group');
-            if (currentMoneyGroup) {
-                if (target.checked) {
-                    currentMoneyGroup.classList.remove('hidden');
-                } else {
-                    currentMoneyGroup.classList.add('hidden');
-                }
-            }
-        });
-    }
-
     // Setup Form Submission (New Group)
     const setupForm = dom.get<HTMLFormElement>('setup-form');
     if (setupForm) {
@@ -127,8 +112,6 @@ export function initSetupEvents(): void {
             const payday = parseInt(dom.get<HTMLInputElement>('payday')?.value || '1');
             const customMonthLength = parseInt(dom.get<HTMLInputElement>('custom-month-length')?.value || '0') || 0;
             const hideDailyQuota = dom.get<HTMLInputElement>('setup-hide-daily-quota')?.checked || false;
-            const showCurrentMoney = dom.get<HTMLInputElement>('setup-show-current-money')?.checked || false;
-            const currentMoney = parseFloat(dom.get<HTMLInputElement>('setup-current-money-input')?.value || '0') || 0;
 
             // Check if group already exists in Firebase
             db.ref('groups/' + gId).once('value')
@@ -178,8 +161,8 @@ export function initSetupEvents(): void {
                         savingsBalance: 0,
                         savingsGoal: 0,
                         hideDailyQuota,
-                        showCurrentMoney,
-                        currentMoney
+                        showCurrentMoney: false,
+                        currentMoney: 0
                     };
                     joinGroup(gId, true, initialData);
                 })

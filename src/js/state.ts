@@ -141,8 +141,32 @@ export const context: AppContext = {
     activeTab: 'expenses'
 };
 
+function ensureArray<T>(val: any): T[] {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.filter(Boolean);
+    if (typeof val === 'object') {
+        return Object.keys(val)
+            .map(Number)
+            .filter(k => !isNaN(k))
+            .sort((a, b) => a - b)
+            .map(k => val[k.toString()])
+            .filter(Boolean);
+    }
+    return [];
+}
+
 export function updateState(newData: Partial<AppState>): void {
     Object.assign(state, getDefaultState(), newData);
+
+    // Convert object-like arrays from Firebase RTDB back to actual JS arrays
+    state.groceries = ensureArray(state.groceries);
+    state.purchases = ensureArray(state.purchases);
+    state.incomes = ensureArray(state.incomes);
+    state.quickAdds = ensureArray(state.quickAdds);
+    state.budgetTopUps = ensureArray(state.budgetTopUps);
+    state.debts = ensureArray(state.debts);
+    state.subscriptions = ensureArray(state.subscriptions);
+    state.customCategories = ensureArray(state.customCategories);
 }
 
 export function resetState(): void {
