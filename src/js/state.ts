@@ -46,6 +46,7 @@ export interface Grocery {
     checked: boolean;
     priority?: 'low' | 'medium' | 'high';
     price?: number;
+    totalPrice?: number;
 }
 
 export interface Subscription {

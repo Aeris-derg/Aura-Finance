@@ -94,8 +94,11 @@ export function renderGroceries(): void {
             </span>
         `;
 
-        const priceText = g.price && g.price > 0 
-            ? `<span style="font-size: 0.8rem; color: var(--text-secondary); margin-left: 10px; font-weight: 500;">(${formatMoney(g.price)}${g.qty > 1 ? ` x ${g.qty} = ${formatMoney(g.price * g.qty)}` : ''})</span>` 
+        const effectiveUnitPrice = g.price || (g.totalPrice ? g.totalPrice / g.qty : 0);
+        const effectiveTotalPrice = g.totalPrice || (g.price ? g.price * g.qty : 0);
+
+        const priceText = effectiveUnitPrice > 0 
+            ? `<span style="font-size: 0.8rem; color: var(--text-secondary); margin-left: 10px; font-weight: 500;">(${formatMoney(effectiveUnitPrice)}${g.qty > 1 ? ` x ${g.qty} = ${formatMoney(effectiveTotalPrice)}` : ''})</span>` 
             : '';
 
         li.innerHTML = `
@@ -159,8 +162,8 @@ window.toggleGrocery = (id: string): void => {
         
         if (!wasChecked && item.checked) {
             // Just checked it off: if it has a price, log it as a purchase
-            if (item.price && item.price > 0) {
-                const totalCost = item.price * (item.qty || 1);
+            const totalCost = item.totalPrice || (item.price ? item.price * (item.qty || 1) : 0);
+            if (totalCost > 0) {
                 const unitStr = item.unit ? ` ${item.unit}` : '';
                 const commentStr = `${item.qty ? item.qty + unitStr + ' ' : ''}${item.name} (from Grocery List)`;
                 

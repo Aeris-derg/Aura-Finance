@@ -94,10 +94,12 @@ export function initExpensesEvents(): void {
             const unitSelect = dom.get<HTMLSelectElement>('grocery-unit');
             const prioritySelect = dom.get<HTMLSelectElement>('grocery-priority');
             const priceInput = dom.get<HTMLInputElement>('grocery-price');
+            const totalPriceInput = dom.get<HTMLInputElement>('grocery-total-price');
             if (!nameInput) return;
             
             const priority = (prioritySelect ? prioritySelect.value : 'medium') as 'low' | 'medium' | 'high';
             const price = priceInput && priceInput.value ? parseFloat(priceInput.value) : undefined;
+            const totalPrice = totalPriceInput && totalPriceInput.value ? parseFloat(totalPriceInput.value) : undefined;
 
             if (!state.groceries) {
                 state.groceries = [];
@@ -109,7 +111,8 @@ export function initExpensesEvents(): void {
                 unit: unitSelect ? unitSelect.value : '',
                 checked: false,
                 priority,
-                ...(price !== undefined ? { price } : {})
+                ...(price !== undefined ? { price } : {}),
+                ...(totalPrice !== undefined ? { totalPrice } : {})
             });
             sounds.click();
             groceryForm.reset();
@@ -117,6 +120,7 @@ export function initExpensesEvents(): void {
             if (unitSelect) unitSelect.value = '';
             if (prioritySelect) prioritySelect.value = 'medium';
             if (priceInput) priceInput.value = '';
+            if (totalPriceInput) totalPriceInput.value = '';
             syncState();
         });
     }

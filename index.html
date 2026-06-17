@@ -285,7 +285,10 @@
                                 <option value="medium" selected>🟡 Medium Priority</option>
                                 <option value="high">🔴 High Priority</option>
                             </select>
-                            <input type="number" id="grocery-price" min="0" step="0.01" placeholder="Price (£ - Optional)" style="flex: 1; height: 42px;">
+                        </div>
+                        <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <input type="number" id="grocery-price" min="0" step="0.01" placeholder="Unit Price (£ - Optional)" style="flex: 1; height: 42px;">
+                            <input type="number" id="grocery-total-price" min="0" step="0.01" placeholder="Total Price (£ - Optional)" style="flex: 1; height: 42px;">
                         </div>
                         <button type="submit" class="btn primary full-width" style="margin-bottom: 15px;">Add to Grocery List</button>
                     </form>
