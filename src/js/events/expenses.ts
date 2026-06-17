@@ -109,7 +109,7 @@ export function initExpensesEvents(): void {
                 unit: unitSelect ? unitSelect.value : '',
                 checked: false,
                 priority,
-                price
+                ...(price !== undefined ? { price } : {})
             });
             sounds.click();
             groceryForm.reset();

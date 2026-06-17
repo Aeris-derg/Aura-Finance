@@ -28,7 +28,10 @@ db.ref('.info/connected').on('value', (snap: any) => {
 export function syncState(): void {
     invalidateCache();
     if (context.dbRef) {
-        context.dbRef.set(state);
+        context.dbRef.set(state).catch((err: Error) => {
+            console.error("Firebase syncState write error:", err);
+            alert("Failed to sync data with database: " + err.message);
+        });
     }
 }
 
