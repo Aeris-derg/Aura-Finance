@@ -85,38 +85,42 @@ export interface AppState {
     currentMoney?: number;
 }
 
-export const defaultState: AppState = {
-    budget: 0,
-    dailyBudget: 0,
-    budgetType: 'monthly',
-    budgetTopUps: [],
-    debts: [],
-    subscriptions: [],
-    hideRemainingBudget: false,
-    payday: 1,
-    customMonthLength: 0,
-    customCategories: [],
-    purchases: [],
-    incomes: [],
-    quickAdds: [],
-    groceries: [],
-    themeColor: '#b5eadd',
-    isDarkMode: false,
-    streakOptOverspending: false,
-    streakStartOverspending: null,
-    streakOptTakeout: false,
-    streakStartTakeout: null,
-    streakOptSaving: false,
-    streakStartSaving: null,
-    savingsBalance: 0,
-    savingsGoal: 0,
-    hideDailyQuota: false,
-    showCurrentMoney: false,
-    currentMoney: 0
-};
+export function getDefaultState(): AppState {
+    return {
+        budget: 0,
+        dailyBudget: 0,
+        budgetType: 'monthly',
+        budgetTopUps: [],
+        debts: [],
+        subscriptions: [],
+        hideRemainingBudget: false,
+        payday: 1,
+        customMonthLength: 0,
+        customCategories: [],
+        purchases: [],
+        incomes: [],
+        quickAdds: [],
+        groceries: [],
+        themeColor: '#b5eadd',
+        isDarkMode: false,
+        streakOptOverspending: false,
+        streakStartOverspending: null,
+        streakOptTakeout: false,
+        streakStartTakeout: null,
+        streakOptSaving: false,
+        streakStartSaving: null,
+        savingsBalance: 0,
+        savingsGoal: 0,
+        hideDailyQuota: false,
+        showCurrentMoney: false,
+        currentMoney: 0
+    };
+}
+
+export const defaultState: AppState = getDefaultState();
 
 // Central synchronized state object (singleton reference)
-export const state: AppState = { ...defaultState };
+export const state: AppState = getDefaultState();
 
 export interface AppContext {
     viewingDate: Date;
@@ -138,7 +142,7 @@ export const context: AppContext = {
 };
 
 export function updateState(newData: Partial<AppState>): void {
-    Object.assign(state, newData);
+    Object.assign(state, getDefaultState(), newData);
 }
 
 export function resetState(): void {
@@ -148,5 +152,5 @@ export function resetState(): void {
         delete (state as any)[key];
     }
     // Re-assign default state values
-    Object.assign(state, defaultState);
+    Object.assign(state, getDefaultState());
 }

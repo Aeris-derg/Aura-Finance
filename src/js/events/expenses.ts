@@ -99,6 +99,9 @@ export function initExpensesEvents(): void {
             const priority = (prioritySelect ? prioritySelect.value : 'medium') as 'low' | 'medium' | 'high';
             const price = priceInput && priceInput.value ? parseFloat(priceInput.value) : undefined;
 
+            if (!state.groceries) {
+                state.groceries = [];
+            }
             state.groceries.push({
                 id: Date.now().toString(),
                 name: nameInput.value,

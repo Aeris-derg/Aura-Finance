@@ -62,6 +62,10 @@ export function renderGroceries(): void {
     if (!list) return;
     list.innerHTML = '';
 
+    if (!state.groceries) {
+        state.groceries = [];
+    }
+
     const sorted = [...state.groceries].sort((a, b) => {
         if (a.checked !== b.checked) return a.checked ? 1 : -1;
         const priorityVal = { high: 3, medium: 2, low: 1 };
@@ -136,12 +140,18 @@ window.deletePurchase = (id: string): void => {
 };
 
 window.deleteGrocery = (id: string): void => {
+    if (!state.groceries) {
+        state.groceries = [];
+    }
     state.groceries = state.groceries.filter(g => g.id !== id);
     sounds.delete();
     syncState();
 };
 
 window.toggleGrocery = (id: string): void => {
+    if (!state.groceries) {
+        state.groceries = [];
+    }
     const item = state.groceries.find(g => g.id === id);
     if (item) {
         const wasChecked = item.checked;
@@ -173,6 +183,9 @@ window.toggleGrocery = (id: string): void => {
 };
 
 window.clearCheckedGroceries = (): void => {
+    if (!state.groceries) {
+        state.groceries = [];
+    }
     state.groceries = state.groceries.filter(g => !g.checked);
     sounds.delete();
     syncState();
